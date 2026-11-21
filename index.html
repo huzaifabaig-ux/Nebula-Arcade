@@ -1,0 +1,2653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEBULA ARCADE | Cosmic Gaming Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;800;900&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #050510;
+      --bg-card: rgba(13, 16, 40, 0.72);
+      --neon-cyan: #00f3ff;
+      --neon-magenta: #ff00ea;
+      --neon-purple: #8a2be2;
+      --star-gold: #ffd700;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-deep);
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, .font-orbitron {
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .font-space {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    button, a, .interactive-target {
+      cursor: pointer;
+    }
+
+    /* Decorative Canvases NEVER intercept clicks */
+    #galaxy-bg-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none !important;
+    }
+
+    #cursor-vfx-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 9999;
+      pointer-events: none !important;
+    }
+
+    .decorative-glow {
+      pointer-events: none !important;
+    }
+
+    /* Glassmorphism & Neon Glows */
+    .glass-panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 243, 255, 0.22);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), inset 0 0 20px rgba(138, 43, 226, 0.08);
+    }
+
+    .glass-card {
+      background: linear-gradient(145deg, rgba(16, 20, 48, 0.82), rgba(8, 10, 26, 0.92));
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.28s ease, box-shadow 0.28s ease;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-5px) scale(1.012);
+      border-color: rgba(0, 243, 255, 0.6);
+      box-shadow: 0 16px 40px rgba(0, 243, 255, 0.2), 0 0 24px rgba(255, 0, 234, 0.16);
+    }
+
+    .neon-text-cyan {
+      text-shadow: 0 0 12px rgba(0, 243, 255, 0.75), 0 0 28px rgba(0, 243, 255, 0.35);
+    }
+
+    .btn-cosmic {
+      background: linear-gradient(135deg, #00f3ff 0%, #8a2be2 50%, #ff00ea 100%);
+      background-size: 200% 200%;
+      animation: gradientShift 4s ease infinite;
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .btn-cosmic:hover {
+      transform: scale(1.04);
+      box-shadow: 0 0 30px rgba(255, 0, 234, 0.65);
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-7px); }
+    }
+
+    .animate-float {
+      animation: floatSlow 5s ease-in-out infinite;
+    }
+
+    /* Page View Visibility */
+    .page-view {
+      display: none;
+    }
+
+    .page-view.active {
+      display: block;
+      animation: fadeSlideIn 0.3s ease forwards;
+    }
+
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #050510;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #00f3ff, #8a2be2);
+      border-radius: 9999px;
+    }
+
+    /* Game Canvas Responsive Container */
+    #game-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 1rem;
+      background: radial-gradient(circle at center, #0c102b 0%, #04040c 100%);
+      touch-action: none;
+      cursor: crosshair;
+    }
+  </style>
+</head>
+<body class="relative selection:bg-cyan-400 selection:text-slate-950">
+
+  <!-- Deep Space Starfield & Interactive Nebula Canvas -->
+  <canvas id="galaxy-bg-canvas"></canvas>
+
+  <!-- Custom Mouse Pointer Follower & Stardust Particle Trail Canvas -->
+  <canvas id="cursor-vfx-canvas"></canvas>
+
+  <!-- Toast Notification Box -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-cyan-500/20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+      <!-- Brand Logo -->
+      <button type="button" onclick="navigateTo('home')" class="interactive-target flex items-center gap-3 group text-left">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-400 via-purple-600 to-fuchsia-500 p-0.5 shadow-lg shadow-cyan-500/30 group-hover:rotate-12 transition-transform">
+          <div class="w-full h-full bg-[#070919] rounded-[10px] flex items-center justify-center">
+            <svg class="w-6 h-6 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" fill="#00f3ff"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-30 12 12)" stroke="#ff00ea"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(30 12 12)" stroke="#00f3ff"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <span class="font-orbitron font-black text-lg sm:text-xl tracking-wider bg-gradient-to-r from-cyan-300 via-white to-fuchsia-400 bg-clip-text text-transparent">
+            NEBULA ARCADE
+          </span>
+          <span class="block text-[10px] tracking-[0.25em] text-cyan-400/80 uppercase font-space">32 Cosmic Games</span>
+        </div>
+      </button>
+
+      <!-- Desktop Navigation Links -->
+      <nav class="hidden md:flex items-center gap-2 bg-slate-950/70 p-1.5 rounded-2xl border border-white/10">
+        <button type="button" data-nav="home" onclick="navigateTo('home')" class="nav-btn interactive-target px-4 py-2 rounded-xl text-sm font-semibold transition-all text-cyan-300 bg-cyan-500/15 shadow-inner">
+          Home
+        </button>
+        <button type="button" data-nav="library" onclick="navigateTo('library')" class="nav-btn interactive-target px-4 py-2 rounded-xl text-sm font-semibold transition-all text-slate-300 hover:text-white">
+          Games (32)
+        </button>
+        <button type="button" data-nav="arena" onclick="navigateTo('arena')" class="nav-btn interactive-target px-4 py-2 rounded-xl text-sm font-semibold transition-all text-slate-300 hover:text-white flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-fuchsia-500 animate-ping"></span>
+          Arcade Arena
+        </button>
+        <button type="button" data-nav="leaderboard" onclick="navigateTo('leaderboard')" class="nav-btn interactive-target px-4 py-2 rounded-xl text-sm font-semibold transition-all text-slate-300 hover:text-white">
+          Leaderboard
+        </button>
+        <button type="button" data-nav="settings" onclick="navigateTo('settings')" class="nav-btn interactive-target px-4 py-2 rounded-xl text-sm font-semibold transition-all text-slate-300 hover:text-white">
+          VFX & Controls
+        </button>
+      </nav>
+
+      <!-- Right Status Pill + Mobile Menu Button -->
+      <div class="flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-amber-400/30 text-amber-300 text-xs font-orbitron">
+          <span>★</span>
+          <span id="header-total-score">0</span>
+          <span class="text-slate-400 font-sans">PTS</span>
+        </div>
+        <button type="button" onclick="launchRandomGame()" class="interactive-target btn-cosmic px-4 py-2 rounded-xl font-orbitron text-xs font-bold tracking-wider text-white uppercase">
+          Quick Play
+        </button>
+        <button type="button" id="mobile-menu-btn" onclick="toggleMobileMenu()" class="md:hidden interactive-target p-2 rounded-xl bg-slate-900 border border-white/10 text-cyan-300">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Navigation -->
+    <div id="mobile-menu" class="hidden md:hidden px-4 pb-4 pt-2 border-t border-white/10 bg-[#07091a]/95 flex flex-col gap-2">
+      <button type="button" onclick="navigateTo('home'); toggleMobileMenu()" class="text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-cyan-300 bg-white/5">Home</button>
+      <button type="button" onclick="navigateTo('library'); toggleMobileMenu()" class="text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/5">Games Library (32 Games)</button>
+      <button type="button" onclick="navigateTo('arena'); toggleMobileMenu()" class="text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-fuchsia-300 hover:bg-white/5">Arcade Arena</button>
+      <button type="button" onclick="navigateTo('leaderboard'); toggleMobileMenu()" class="text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/5">Leaderboard & Badges</button>
+      <button type="button" onclick="navigateTo('settings'); toggleMobileMenu()" class="text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/5">VFX & Controls</button>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- ==================== PAGE 1: HOME ==================== -->
+    <section id="page-home" class="page-view active space-y-12">
+      <!-- Hero Banner -->
+      <div class="glass-panel rounded-3xl p-6 sm:p-10 lg:p-14 relative overflow-hidden border border-cyan-400/25">
+        <div class="decorative-glow absolute -top-24 -right-24 w-96 h-96 bg-fuchsia-600/20 rounded-full blur-3xl"></div>
+        <div class="decorative-glow absolute -bottom-24 -left-24 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"></div>
+
+        <div class="grid lg:grid-cols-12 gap-8 items-center relative z-10">
+          <div class="lg:col-span-7 space-y-6">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-xs font-orbitron tracking-widest uppercase">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              Next-Gen Browser Galaxy Arcade
+            </div>
+
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight">
+              PLAY <span class="bg-gradient-to-r from-cyan-300 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent neon-text-cyan">32+ COSMIC</span><br />
+              ARCADE GAMES
+            </h1>
+
+            <p class="text-slate-300 text-base sm:text-lg max-w-2xl leading-relaxed font-space">
+              Enter an interactive deep-space gaming dimension powered by real-time HTML5 volumetric shaders, particle explosions, and instant zero-download browser play.
+            </p>
+
+            <div class="flex flex-wrap items-center gap-4 pt-2">
+              <button type="button" onclick="navigateTo('library')" class="interactive-target btn-cosmic px-7 py-3.5 rounded-2xl font-orbitron font-bold text-sm tracking-wider text-white uppercase shadow-xl">
+                Explore All 32 Games
+              </button>
+              <button type="button" onclick="launchGameById('space-shooter')" class="interactive-target px-7 py-3.5 rounded-2xl glass-card font-orbitron font-bold text-sm tracking-wider text-cyan-300 border border-cyan-400/40 hover:bg-cyan-500/10">
+                Launch Starfighter
+              </button>
+            </div>
+
+            <!-- Live Portal Telemetry Stats -->
+            <div class="grid grid-cols-3 gap-4 pt-4 border-t border-white/10 max-w-lg">
+              <div>
+                <div class="text-2xl sm:text-3xl font-orbitron font-black text-cyan-300">32</div>
+                <div class="text-xs text-slate-400 uppercase tracking-wider">Playable Titles</div>
+              </div>
+              <div>
+                <div class="text-2xl sm:text-3xl font-orbitron font-black text-fuchsia-400" id="home-games-played">0</div>
+                <div class="text-xs text-slate-400 uppercase tracking-wider">Sessions Played</div>
+              </div>
+              <div>
+                <div class="text-2xl sm:text-3xl font-orbitron font-black text-amber-300" id="home-badges-count">0/8</div>
+                <div class="text-xs text-slate-400 uppercase tracking-wider">Cosmic Badges</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Featured Hologram Card -->
+          <div class="lg:col-span-5">
+            <div class="glass-card rounded-3xl p-6 border border-fuchsia-500/30 animate-float relative">
+              <div class="flex items-center justify-between mb-4">
+                <span class="px-3 py-1 rounded-full bg-fuchsia-500/20 text-fuchsia-300 text-xs font-orbitron font-bold">SPOTLIGHT MISSION</span>
+                <span class="text-xs text-cyan-300 font-orbitron">60 FPS • 3D SHADED</span>
+              </div>
+              <div class="aspect-video rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 border border-white/10 flex flex-col items-center justify-center p-6 text-center relative">
+                <svg class="w-20 h-20 text-cyan-400 mb-3 drop-shadow-[0_0_15px_rgba(0,243,255,0.8)]" viewBox="0 0 64 64" fill="none">
+                  <polygon points="32,6 44,46 32,38 20,46" fill="url(#shipGrad)" stroke="#00f3ff" stroke-width="2"/>
+                  <circle cx="32" cy="26" r="5" fill="#ffffff"/>
+                  <path d="M24 46 L32 58 L40 46" stroke="#ff00ea" stroke-width="3" stroke-linecap="round"/>
+                  <defs>
+                    <linearGradient id="shipGrad" x1="20" y1="6" x2="44" y2="46">
+                      <stop offset="0%" stop-color="#00f3ff"/>
+                      <stop offset="100%" stop-color="#8a2be2"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <h3 class="font-orbitron font-bold text-xl text-white">NEBULA STARFIGHTER</h3>
+                <p class="text-xs text-slate-300 mt-1">Blast alien dreadnoughts through hyper-space</p>
+              </div>
+              <div class="mt-5 flex items-center justify-between gap-3">
+                <div>
+                  <div class="text-xs text-slate-400">Your Best Score</div>
+                  <div class="font-orbitron font-bold text-amber-300 text-lg" id="spotlight-best-score">0 PTS</div>
+                </div>
+                <button type="button" onclick="launchGameById('space-shooter')" class="interactive-target btn-cosmic px-5 py-2.5 rounded-xl font-orbitron text-xs font-bold text-white">
+                  PLAY NOW ▶
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Featured Categories Quick Bar -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl sm:text-2xl font-orbitron font-bold text-white">BROWSE BY SECTOR</h2>
+          <button type="button" onclick="navigateTo('library')" class="interactive-target text-sm text-cyan-400 hover:text-cyan-300 font-semibold">View All 32 →</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <button type="button" onclick="filterAndOpenLibrary('Space')" class="interactive-target glass-card p-4 rounded-2xl text-center group">
+            <div class="text-2xl mb-1 group-hover:scale-125 transition-transform">🚀</div>
+            <div class="font-orbitron text-xs font-bold text-cyan-300">SPACE</div>
+          </button>
+          <button type="button" onclick="filterAndOpenLibrary('Action')" class="interactive-target glass-card p-4 rounded-2xl text-center group">
+            <div class="text-2xl mb-1 group-hover:scale-125 transition-transform">⚡</div>
+            <div class="font-orbitron text-xs font-bold text-fuchsia-300">ACTION</div>
+          </button>
+          <button type="button" onclick="filterAndOpenLibrary('Arcade')" class="interactive-target glass-card p-4 rounded-2xl text-center group">
+            <div class="text-2xl mb-1 group-hover:scale-125 transition-transform">🕹️</div>
+            <div class="font-orbitron text-xs font-bold text-purple-300">ARCADE</div>
+          </button>
+          <button type="button" onclick="filterAndOpenLibrary('Puzzle')" class="interactive-target glass-card p-4 rounded-2xl text-center group">
+            <div class="text-2xl mb-1 group-hover:scale-125 transition-transform">🧩</div>
+            <div class="font-orbitron text-xs font-bold text-emerald-300">PUZZLE</div>
+          </button>
+          <button type="button" onclick="filterAndOpenLibrary('Reflex')" class="interactive-target glass-card p-4 rounded-2xl text-center group">
+            <div class="text-2xl mb-1 group-hover:scale-125 transition-transform">🎯</div>
+            <div class="font-orbitron text-xs font-bold text-amber-300">REFLEX</div>
+          </button>
+          <button type="button" onclick="filterAndOpenLibrary('Classic')" class="interactive-target glass-card p-4 rounded-2xl text-center group">
+            <div class="text-2xl mb-1 group-hover:scale-125 transition-transform">👾</div>
+            <div class="font-orbitron text-xs font-bold text-sky-300">CLASSIC</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Featured 8 Popular Games Preview -->
+      <div class="space-y-5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-orbitron font-bold text-white">FEATURED GALAXY TITLES</h2>
+            <p class="text-xs sm:text-sm text-slate-400">Hand-picked cosmic experiences ready for instant launch</p>
+          </div>
+          <button type="button" onclick="navigateTo('library')" class="interactive-target px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-orbitron text-cyan-300">
+            OPEN FULL VAULT (32)
+          </button>
+        </div>
+        <div id="home-featured-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+      </div>
+    </section>
+
+    <!-- ==================== PAGE 2: GAMES LIBRARY (32 GAMES) ==================== -->
+    <section id="page-library" class="page-view space-y-8">
+      <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-cyan-500/25">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div>
+            <h1 class="text-2xl sm:text-4xl font-orbitron font-black text-white">
+              GALAXY VAULT <span class="text-cyan-400">(32 GAMES)</span>
+            </h1>
+            <p class="text-slate-300 text-sm mt-1">Click any game card below to launch immediately in the High-Graphics Arcade Arena.</p>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative w-full lg:w-80">
+            <input
+              id="game-search-input"
+              type="text"
+              placeholder="Search 32 cosmic games..."
+              oninput="renderLibraryGrid()"
+              class="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-950/80 border border-cyan-400/30 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400"
+            />
+            <svg class="w-5 h-5 text-cyan-400 absolute left-3.5 top-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Category Filter Pills -->
+        <div id="category-filter-bar" class="flex flex-wrap items-center gap-2 mt-6 pt-5 border-t border-white/10">
+          <button type="button" onclick="setCategoryFilter('All')" data-cat="All" class="cat-pill interactive-target px-4 py-2 rounded-xl text-xs font-orbitron font-bold bg-cyan-500 text-slate-950">ALL (32)</button>
+          <button type="button" onclick="setCategoryFilter('Space')" data-cat="Space" class="cat-pill interactive-target px-4 py-2 rounded-xl text-xs font-orbitron font-bold bg-white/5 text-slate-300 hover:bg-white/10">SPACE</button>
+          <button type="button" onclick="setCategoryFilter('Action')" data-cat="Action" class="cat-pill interactive-target px-4 py-2 rounded-xl text-xs font-orbitron font-bold bg-white/5 text-slate-300 hover:bg-white/10">ACTION</button>
+          <button type="button" onclick="setCategoryFilter('Arcade')" data-cat="Arcade" class="cat-pill interactive-target px-4 py-2 rounded-xl text-xs font-orbitron font-bold bg-white/5 text-slate-300 hover:bg-white/10">ARCADE</button>
+          <button type="button" onclick="setCategoryFilter('Puzzle')" data-cat="Puzzle" class="cat-pill interactive-target px-4 py-2 rounded-xl text-xs font-orbitron font-bold bg-white/5 text-slate-300 hover:bg-white/10">PUZZLE</button>
+          <button type="button" onclick="setCategoryFilter('Reflex')" data-cat="Reflex" class="cat-pill interactive-target px-4 py-2 rounded-xl text-xs font-orbitron font-bold bg-white/5 text-slate-300 hover:bg-white/10">REFLEX</button>
+          <button type="button" onclick="setCategoryFilter('Classic')" data-cat="Classic" class="cat-pill interactive-target px-4 py-2 rounded-xl text-xs font-orbitron font-bold bg-white/5 text-slate-300 hover:bg-white/10">CLASSIC</button>
+        </div>
+      </div>
+
+      <!-- 32 Games Grid -->
+      <div id="library-games-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+    </section>
+
+    <!-- ==================== PAGE 3: ARCADE ARENA (LIVE GAME PLAYER) ==================== -->
+    <section id="page-arena" class="page-view space-y-6">
+      <div class="glass-panel rounded-3xl p-4 sm:p-6 border border-fuchsia-500/30">
+        <!-- Top Arena Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-4 mb-4 border-b border-white/10">
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="navigateTo('library')" class="interactive-target px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-orbitron text-cyan-300">
+              ← VAULT
+            </button>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 id="arena-game-title" class="text-lg sm:text-2xl font-orbitron font-black text-white">NEBULA STARFIGHTER</h2>
+                <span id="arena-game-category" class="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-orbitron uppercase">SPACE</span>
+              </div>
+              <p id="arena-game-instructions" class="text-xs text-slate-300 mt-0.5">Move mouse or Left/Right arrows to pilot & auto-fire lasers.</p>
+            </div>
+          </div>
+
+          <!-- Live HUD Counters & Controls -->
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="px-4 py-2 rounded-xl bg-slate-950/90 border border-cyan-400/30 text-center">
+              <div class="text-[10px] text-slate-400 font-orbitron">SCORE</div>
+              <div id="arena-score" class="text-lg font-orbitron font-black text-cyan-300">0</div>
+            </div>
+            <div class="px-4 py-2 rounded-xl bg-slate-950/90 border border-amber-400/30 text-center">
+              <div class="text-[10px] text-slate-400 font-orbitron">BEST</div>
+              <div id="arena-best-score" class="text-lg font-orbitron font-black text-amber-300">0</div>
+            </div>
+            <button type="button" onclick="restartCurrentGame()" class="interactive-target btn-cosmic px-4 py-2.5 rounded-xl font-orbitron text-xs font-bold text-white">
+              ↻ RESTART
+            </button>
+            <button type="button" onclick="toggleSoundFx()" id="sound-toggle-btn" class="interactive-target px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-orbitron text-cyan-300">
+              🔊 SFX: ON
+            </button>
+            <button type="button" onclick="toggleArenaFullscreen()" class="interactive-target px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-orbitron text-fuchsia-300">
+              ⛶ FULL
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Canvas Viewport -->
+        <div id="arena-canvas-wrapper" class="relative w-full h-[56vh] min-h-[380px] max-h-[640px] rounded-2xl overflow-hidden border border-cyan-400/30 shadow-[0_0_40px_rgba(0,243,255,0.12)]">
+          <canvas id="game-canvas"></canvas>
+
+          <!-- Game Over / Start Overlay -->
+          <div id="arena-overlay" class="hidden absolute inset-0 bg-[#050510]/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
+            <div id="overlay-badge" class="px-3 py-1 rounded-full bg-fuchsia-500/20 border border-fuchsia-400/40 text-fuchsia-300 text-xs font-orbitron mb-2">MISSION COMPLETE</div>
+            <h3 id="overlay-title" class="text-3xl sm:text-4xl font-orbitron font-black text-white mb-2">GAME OVER</h3>
+            <p id="overlay-subtitle" class="text-slate-300 text-sm mb-6">Final Score: <span id="overlay-final-score" class="text-cyan-300 font-bold">0</span></p>
+            <div class="flex flex-wrap items-center justify-center gap-4">
+              <button type="button" onclick="restartCurrentGame()" class="interactive-target btn-cosmic px-6 py-3 rounded-2xl font-orbitron text-xs font-bold text-white uppercase">
+                Play Again
+              </button>
+              <button type="button" onclick="launchRandomGame()" class="interactive-target px-6 py-3 rounded-2xl glass-card border border-cyan-400/40 font-orbitron text-xs font-bold text-cyan-300 uppercase">
+                Next Random Game →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Switcher Strip Below Canvas -->
+        <div class="mt-4 pt-4 border-t border-white/10 flex items-center justify-between gap-4 overflow-x-auto pb-1">
+          <span class="text-xs font-orbitron text-slate-400 whitespace-nowrap">QUICK SWITCH:</span>
+          <div id="arena-quick-strip" class="flex items-center gap-2"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PAGE 4: LEADERBOARD & ACHIEVEMENTS ==================== -->
+    <section id="page-leaderboard" class="page-view space-y-8">
+      <div class="grid lg:grid-cols-12 gap-6">
+        <!-- Player Cosmic Rank Card -->
+        <div class="lg:col-span-5 glass-panel rounded-3xl p-6 sm:p-8 border border-amber-400/30 space-y-6">
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-fuchsia-500 to-cyan-400 p-0.5">
+              <div class="w-full h-full bg-[#070919] rounded-[14px] flex items-center justify-center text-3xl">👨‍🚀</div>
+            </div>
+            <div>
+              <div class="text-xs font-orbitron text-amber-300 uppercase">Commander Rank</div>
+              <h2 id="player-rank-title" class="text-2xl font-orbitron font-black text-white">STAR CADET</h2>
+              <p class="text-xs text-slate-400">Play more games to ascend the galaxy ranks</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="glass-card p-4 rounded-2xl">
+              <div class="text-xs text-slate-400">Total Galaxy Points</div>
+              <div id="lb-total-points" class="text-2xl font-orbitron font-black text-cyan-300 mt-1">0</div>
+            </div>
+            <div class="glass-card p-4 rounded-2xl">
+              <div class="text-xs text-slate-400">Games Explored</div>
+              <div id="lb-games-explored" class="text-2xl font-orbitron font-black text-fuchsia-400 mt-1">0 / 32</div>
+            </div>
+          </div>
+
+          <!-- Cosmic Achievements -->
+          <div class="space-y-3">
+            <h3 class="font-orbitron text-sm font-bold text-white">COSMIC ACHIEVEMENTS</h3>
+            <div id="achievements-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+          </div>
+        </div>
+
+        <!-- Top Personal High Scores Table -->
+        <div class="lg:col-span-7 glass-panel rounded-3xl p-6 sm:p-8 border border-cyan-500/25">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-xl sm:text-2xl font-orbitron font-bold text-white">PERSONAL HIGH SCORES</h2>
+              <p class="text-xs text-slate-400">Your best records across all 32 Nebula Arcade titles</p>
+            </div>
+            <button type="button" onclick="resetAllProgress()" class="interactive-target px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-orbitron">
+              Reset Stats
+            </button>
+          </div>
+          <div id="high-scores-table" class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PAGE 5: VFX & CONTROLS SETTINGS ==================== -->
+    <section id="page-settings" class="page-view space-y-8">
+      <div class="glass-panel rounded-3xl p-6 sm:p-10 border border-purple-500/30 max-w-4xl mx-auto space-y-8">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-orbitron font-black text-white">VFX ENGINE & CURSOR LAB</h1>
+          <p class="text-sm text-slate-300 mt-1">Customize particle density, mouse trail physics, and interactive galaxy graphics.</p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-6">
+          <!-- VFX Intensity -->
+          <div class="glass-card p-6 rounded-2xl space-y-4">
+            <h3 class="font-orbitron text-sm font-bold text-cyan-300">GALAXY VFX INTENSITY</h3>
+            <p class="text-xs text-slate-400">Adjust background starfield count, nebula shaders, and cursor particle emissions.</p>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" onclick="setVfxLevel('low')" data-vfx="low" class="vfx-btn interactive-target py-2.5 rounded-xl text-xs font-orbitron font-bold bg-white/5 text-slate-300">LOW</button>
+              <button type="button" onclick="setVfxLevel('medium')" data-vfx="medium" class="vfx-btn interactive-target py-2.5 rounded-xl text-xs font-orbitron font-bold bg-white/5 text-slate-300">MEDIUM</button>
+              <button type="button" onclick="setVfxLevel('ultra')" data-vfx="ultra" class="vfx-btn interactive-target py-2.5 rounded-xl text-xs font-orbitron font-bold bg-cyan-500 text-slate-950">ULTRA</button>
+            </div>
+          </div>
+
+          <!-- Custom Cursor Style -->
+          <div class="glass-card p-6 rounded-2xl space-y-4">
+            <h3 class="font-orbitron text-sm font-bold text-fuchsia-300">POINTER AURA STYLE</h3>
+            <p class="text-xs text-slate-400">Choose how the cosmic reticle animates around your mouse pointer.</p>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" onclick="setCursorStyle('nebula')" data-cursor="nebula" class="cursor-btn interactive-target py-2.5 rounded-xl text-xs font-orbitron font-bold bg-fuchsia-500 text-white">NEBULA</button>
+              <button type="button" onclick="setCursorStyle('starship')" data-cursor="starship" class="cursor-btn interactive-target py-2.5 rounded-xl text-xs font-orbitron font-bold bg-white/5 text-slate-300">STARSHIP</button>
+              <button type="button" onclick="setCursorStyle('vortex')" data-cursor="vortex" class="cursor-btn interactive-target py-2.5 rounded-xl text-xs font-orbitron font-bold bg-white/5 text-slate-300">VORTEX</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls Guide -->
+        <div class="glass-card p-6 rounded-2xl space-y-4">
+          <h3 class="font-orbitron text-sm font-bold text-amber-300">UNIVERSAL CONTROLS GUIDE</h3>
+          <div class="grid sm:grid-cols-3 gap-4 text-xs text-slate-300">
+            <div class="p-3.5 rounded-xl bg-slate-950/70 border border-white/5">
+              <div class="font-orbitron font-bold text-cyan-300 mb-1">MOUSE / TOUCH</div>
+              Move or click directly on the Arena canvas for precision steering, aiming, and tapping targets.
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-950/70 border border-white/5">
+              <div class="font-orbitron font-bold text-fuchsia-300 mb-1">ARROW KEYS / WASD</div>
+              Full keyboard support for directional arcade games, snake, mazes, and starfighters.
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-950/70 border border-white/5">
+              <div class="font-orbitron font-bold text-amber-300 mb-1">SPACEBAR / CLICK</div>
+              Triggers thruster boosts, jumps, laser bursts, and instant restarts.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="relative z-10 border-t border-white/10 mt-16 py-8 text-center text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="font-orbitron text-slate-300">NEBULA ARCADE © 2026 • COSMIC HTML5 GAMING ENGINE</div>
+      <div>32 Playable Mini-Games • Real-Time Particle & Pointer VFX</div>
+    </div>
+  </footer>
+
+  <script>
+    /*************************************************************************
+     * 1. CATALOG OF 32 PLAYABLE GALAXY GAMES
+     *************************************************************************/
+    const GAMES_CATALOG = [
+      { id: 'space-shooter', title: 'Nebula Starfighter', category: 'Space', engine: 'shooter', difficulty: 'Medium', color: '#00f3ff', icon: '🚀', instructions: 'Move mouse or Left/Right arrows to pilot & auto-fire twin plasma cannons.' },
+      { id: 'asteroid-dodger', title: 'Asteroid Belt Drift', category: 'Space', engine: 'dodger', difficulty: 'Medium', color: '#ff00ea', icon: '☄️', instructions: 'Dodge incoming magma meteors and collect golden Star Cells!' },
+      { id: 'cosmic-snake', title: 'Plasma Serpent', category: 'Classic', engine: 'snake', difficulty: 'Easy', color: '#10b981', icon: '🐍', instructions: 'Use Arrow Keys / WASD or tap canvas quadrants to consume quantum orbs.' },
+      { id: 'cyber-pong', title: 'Photon Laser Pong', category: 'Classic', engine: 'pong', difficulty: 'Medium', color: '#00f3ff', icon: '🏓', instructions: 'Move mouse vertically or Up/Down arrows to defeat the Cosmic AI.' },
+      { id: 'crystal-breaker', title: 'Supernova Brick Breaker', category: 'Arcade', engine: 'breakout', difficulty: 'Medium', color: '#ffd700', icon: '🧱', instructions: 'Slide paddle with mouse or Left/Right arrows to shatter crystal matrices.' },
+      { id: 'flappy-nebula', title: 'Jetpack Nebula Drift', category: 'Arcade', engine: 'flappy', difficulty: 'Hard', color: '#ff00ea', icon: '🛸', instructions: 'Click, tap, or press Space/Up to pulse thrusters through laser gates.' },
+      { id: 'holo-aim', title: 'Quantum Sniper Reflex', category: 'Reflex', engine: 'aim', difficulty: 'Medium', color: '#00f3ff', icon: '🎯', instructions: 'Click or tap glowing holographic targets before the 20s timer expires.' },
+      { id: 'reactor-core', title: 'Singularity Core Overload', category: 'Action', engine: 'clicker', difficulty: 'Easy', color: '#a855f7', icon: '⚛️', instructions: 'Rapidly click/tap the pulsing dark-matter reactor core to charge megawatts.' },
+      { id: 'holo-cipher', title: 'Alien Cipher Matrix', category: 'Puzzle', engine: 'simon', difficulty: 'Medium', color: '#10b981', icon: '🔮', instructions: 'Watch the harmonic light sequence and repeat the pattern on the pads.' },
+      { id: 'orbit-catcher', title: 'Stardust Gravity Collector', category: 'Arcade', engine: 'catcher', difficulty: 'Easy', color: '#ffd700', icon: '🧲', instructions: 'Catch golden stardust spheres while avoiding red antimatter bombs.' },
+      { id: 'lunar-crater', title: 'Meteor Crater Smash', category: 'Reflex', engine: 'whack', difficulty: 'Easy', color: '#f97316', icon: '🌑', instructions: 'Tap glowing plasma cores emerging from lunar gravity vents!' },
+      { id: 'warp-math', title: 'Hyperdrive Vector Math', category: 'Puzzle', engine: 'math', difficulty: 'Medium', color: '#38bdf8', icon: '🧮', instructions: 'Tap the correct quantum sum to lock hyperdrive coordinates.' },
+
+      { id: 'void-interceptor', title: 'Void Interceptor X', category: 'Space', engine: 'shooter', difficulty: 'Hard', color: '#f43f5e', icon: '🛰️', instructions: 'High-speed interceptor combat against relentless alien dreadnoughts.' },
+      { id: 'wormhole-runner', title: 'Wormhole Hyper-Tunnel', category: 'Action', engine: 'dodger', difficulty: 'Hard', color: '#8b5cf6', icon: '🌀', instructions: 'Weave through dense asteroid swarms at relativistic velocity.' },
+      { id: 'ouroboros-star', title: 'Ouroboros Star Eater', category: 'Classic', engine: 'snake', difficulty: 'Hard', color: '#f59e0b', icon: '🐉', instructions: 'High-velocity cosmic serpent challenge—grow without hitting your tail.' },
+      { id: 'pulsar-tennis', title: 'Pulsar Binary Duel', category: 'Classic', engine: 'pong', difficulty: 'Hard', color: '#ec4899', icon: '⚡', instructions: 'Overclocked energy paddle duel against Grandmaster AI.' },
+      { id: 'prism-shatter', title: 'Prism Matrix Shatter', category: 'Arcade', engine: 'breakout', difficulty: 'Hard', color: '#06b6d4', icon: '💎', instructions: 'High-speed photon orb deflection across multi-layered prism walls.' },
+      { id: 'gravity-glider', title: 'Zero-G Thruster Glider', category: 'Arcade', engine: 'flappy', difficulty: 'Medium', color: '#22c55e', icon: '👨‍🚀', instructions: 'Feather your zero-gravity pack between orbital plasma pylons.' },
+      { id: 'drone-lock', title: 'Recon Drone Target Lock', category: 'Reflex', engine: 'aim', difficulty: 'Hard', color: '#f43f5e', icon: '🔭', instructions: 'Precision target acquisition on shrinking micro-drones.' },
+      { id: 'dark-matter-tap', title: 'Dark Matter Harvester', category: 'Action', engine: 'clicker', difficulty: 'Medium', color: '#00f3ff', icon: '🌌', instructions: 'Harvest unstable dark matter particles before containment collapses.' },
+      { id: 'nebula-echo', title: 'Nebula Harmonic Echo', category: 'Puzzle', engine: 'simon', difficulty: 'Hard', color: '#c084fc', icon: '🎼', instructions: 'Decode extended alien telemetry sequences under pressure.' },
+      { id: 'comet-harvest', title: 'Comet Tail Harvester', category: 'Arcade', engine: 'catcher', difficulty: 'Hard', color: '#38bdf8', icon: '☄️', instructions: 'Fast-falling comet fragments—collect gold and dodge crimson mines.' },
+      { id: 'xenon-pop', title: 'Xenon Vent Overdrive', category: 'Reflex', engine: 'whack', difficulty: 'Hard', color: '#eab308', icon: '💥', instructions: 'Rapidly neutralize unstable xenon vents before they overload.' },
+      { id: 'astro-calculus', title: 'Astro Telemetry Solver', category: 'Puzzle', engine: 'math', difficulty: 'Hard', color: '#34d399', icon: '📡', instructions: 'Solve rapid orbital equations to stabilize deep-space relays.' },
+
+      { id: 'galaxy-guardian', title: 'Galaxy Perimeter Guard', category: 'Space', engine: 'shooter', difficulty: 'Easy', color: '#38bdf8', icon: '🛡️', instructions: 'Defend the outer rim station from incoming alien scout waves.' },
+      { id: 'solar-flare-dodge', title: 'Solar Flare Evader', category: 'Action', engine: 'dodger', difficulty: 'Easy', color: '#fb923c', icon: '☀️', instructions: 'Pilot your heat-shielded craft through solar flare ejections.' },
+      { id: 'neon-viper', title: 'Cyber Viper 3000', category: 'Classic', engine: 'snake', difficulty: 'Medium', color: '#a3e635', icon: '🔋', instructions: 'Classic arcade grid navigation with neon particle bursts.' },
+      { id: 'orbital-wall', title: 'Orbital Shield Deflect', category: 'Arcade', engine: 'breakout', difficulty: 'Easy', color: '#f472b6', icon: '🛸', instructions: 'Relaxed cosmic brick-breaking with glowing plasma trails.' },
+      { id: 'star-hopper', title: 'Starlight Void Hopper', category: 'Arcade', engine: 'flappy', difficulty: 'Easy', color: '#60a5fa', icon: '✨', instructions: 'Smooth low-gravity hopping through deep-space gates.' },
+      { id: 'photon-burst', title: 'Photon Burst Reflex', category: 'Reflex', engine: 'aim', difficulty: 'Easy', color: '#4ade80', icon: '🌟', instructions: 'Train your mouse speed on luminous photon spheres.' },
+      { id: 'supergiant-pulse', title: 'Supergiant Star Pulse', category: 'Action', engine: 'clicker', difficulty: 'Hard', color: '#fb7185', icon: '🔥', instructions: 'Trigger a controlled supernova with maximum tap frequency.' },
+      { id: 'quantum-lock', title: 'Quantum Vault Decrypter', category: 'Puzzle', engine: 'simon', difficulty: 'Easy', color: '#2dd4bf', icon: '🔐', instructions: 'Unlock the ancient alien vault by matching color frequencies.' }
+    ];
+
+    const ACHIEVEMENTS_CATALOG = [
+      { id: 'first-launch', title: 'First Ignition', desc: 'Play your first cosmic game', icon: '🚀', check: s => s.sessionsPlayed >= 1 },
+      { id: 'explorer-5', title: 'Sector Scout', desc: 'Play 5 different games', icon: '🧭', check: s => Object.keys(s.scores).length >= 5 },
+      { id: 'explorer-15', title: 'Galaxy Voyager', desc: 'Play 15 different games', icon: '🌌', check: s => Object.keys(s.scores).length >= 15 },
+      { id: 'explorer-32', title: 'Vault Conqueror', desc: 'Play all 32 cosmic games', icon: '👑', check: s => Object.keys(s.scores).length >= 32 },
+      { id: 'pts-500', title: 'Star Rookie', desc: 'Earn 500 total points', icon: '⭐', check: s => getTotalScore(s) >= 500 },
+      { id: 'pts-2500', title: 'Nebula Ace', desc: 'Earn 2,500 total points', icon: '💫', check: s => getTotalScore(s) >= 2500 },
+      { id: 'pts-10000', title: 'Supernova Legend', desc: 'Earn 10,000 total points', icon: '🏆', check: s => getTotalScore(s) >= 10000 },
+      { id: 'dedicated-10', title: 'Arcade Regular', desc: 'Complete 10 game sessions', icon: '🕹️', check: s => s.sessionsPlayed >= 10 }
+    ];
+
+    /*************************************************************************
+     * 2. PERSISTENT PLAYER STATE & AUDIO SYNTHESIZER
+     *************************************************************************/
+    const STORAGE_KEY = 'nebula_arcade_state_v2';
+    let playerState = {
+      scores: {},
+      sessionsPlayed: 0,
+      soundOn: true,
+      vfxLevel: 'ultra',
+      cursorStyle: 'nebula'
+    };
+
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved) playerState = { ...playerState, ...saved };
+    } catch (e) {}
+
+    let activeCategory = 'All';
+    let currentActiveGame = GAMES_CATALOG[0];
+
+    function savePlayerState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(playerState));
+      } catch (e) {}
+      updateGlobalStatsUI();
+    }
+
+    function getTotalScore(state = playerState) {
+      return Object.values(state.scores || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
+    }
+
+    function getGameById(id) {
+      return GAMES_CATALOG.find(g => g.id === id) || GAMES_CATALOG[0];
+    }
+
+    function recordGameScore(gameId, score) {
+      const prev = playerState.scores[gameId] || 0;
+      if (score > prev) {
+        playerState.scores[gameId] = score;
+        showToast(`NEW RECORD! ${score.toLocaleString()} PTS`, 'amber');
+      }
+      savePlayerState();
+      renderHomeFeatured();
+      renderLibraryGrid();
+    }
+
+    // Web Audio API Zero-Dependency Synth SFX
+    let audioCtx = null;
+    function playSynthSound(type) {
+      if (!playerState.soundOn) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'laser') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(680, now);
+          osc.frequency.exponentialRampToValueAtTime(160, now + 0.09);
+          gain.gain.setValueAtTime(0.06, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+          osc.start(now);
+          osc.stop(now + 0.09);
+        } else if (type === 'score') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(980, now + 0.14);
+          gain.gain.setValueAtTime(0.09, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+          osc.start(now);
+          osc.stop(now + 0.14);
+        } else if (type === 'explosion') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(38, now + 0.28);
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+          osc.start(now);
+          osc.stop(now + 0.28);
+        } else {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(420, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.start(now);
+          osc.stop(now + 0.06);
+        }
+      } catch (e) {}
+    }
+
+    function toggleSoundFx() {
+      playerState.soundOn = !playerState.soundOn;
+      document.getElementById('sound-toggle-btn').textContent = playerState.soundOn ? '🔊 SFX: ON' : '🔇 SFX: OFF';
+      savePlayerState();
+      showToast(playerState.soundOn ? 'Cosmic Audio Enabled' : 'Audio Muted', 'cyan');
+    }
+
+    function showToast(msg, tone = 'cyan') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const el = document.createElement('div');
+      const borderCol = tone === 'amber' ? 'border-amber-400/50 text-amber-200' : 'border-cyan-400/50 text-cyan-200';
+      el.className = `glass-panel px-4 py-2.5 rounded-2xl border ${borderCol} text-xs font-orbitron shadow-xl transition-all duration-300`;
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(8px)';
+        setTimeout(() => el.remove(), 300);
+      }, 2400);
+    }
+
+    /*************************************************************************
+     * 3. MULTI-PAGE NAVIGATION & UI RENDERING
+     *************************************************************************/
+    function navigateTo(pageId) {
+      document.querySelectorAll('.page-view').forEach(sec => sec.classList.remove('active'));
+      const target = document.getElementById(`page-${pageId}`);
+      if (target) target.classList.add('active');
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        const isMatch = btn.dataset.nav === pageId;
+        btn.classList.toggle('text-cyan-300', isMatch);
+        btn.classList.toggle('bg-cyan-500/15', isMatch);
+        btn.classList.toggle('text-slate-300', !isMatch);
+      });
+
+      if (pageId !== 'arena') {
+        stopActiveGameLoop();
+      }
+      if (pageId === 'leaderboard') {
+        renderLeaderboardPage();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function toggleMobileMenu() {
+      document.getElementById('mobile-menu').classList.toggle('hidden');
+    }
+
+    function createGameCardHTML(game) {
+      const best = playerState.scores[game.id] || 0;
+      const diffBadge = game.difficulty === 'Hard'
+        ? 'text-rose-300 bg-rose-500/15 border-rose-400/30'
+        : game.difficulty === 'Medium'
+        ? 'text-amber-300 bg-amber-500/15 border-amber-400/30'
+        : 'text-emerald-300 bg-emerald-500/15 border-emerald-400/30';
+
+      return `
+        <div onclick="launchGameById('${game.id}')" class="interactive-target glass-card rounded-2xl p-5 flex flex-col justify-between gap-4 group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-orbitron uppercase tracking-wider bg-white/5 text-cyan-300 border border-white/10">
+                ${game.category}
+              </span>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-orbitron border ${diffBadge}">
+                ${game.difficulty}
+              </span>
+            </div>
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl bg-slate-950/90 border border-white/10 group-hover:scale-110 transition-transform" style="box-shadow: 0 0 18px ${game.color}33">
+                ${game.icon}
+              </div>
+              <div>
+                <h3 class="font-orbitron font-bold text-sm sm:text-base text-white group-hover:text-cyan-300 transition-colors">
+                  ${game.title}
+                </h3>
+                <div class="text-[11px] text-amber-300 font-orbitron mt-0.5">
+                  BEST: ${best.toLocaleString()} PTS
+                </div>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+              ${game.instructions}
+            </p>
+          </div>
+          <button type="button" onclick="event.stopPropagation(); launchGameById('${game.id}')" class="w-full py-2.5 rounded-xl bg-white/5 group-hover:bg-gradient-to-r group-hover:from-cyan-500 group-hover:to-fuchsia-500 text-xs font-orbitron font-bold text-cyan-300 group-hover:text-white transition-all">
+            PLAY NOW ▶
+          </button>
+        </div>
+      `;
+    }
+
+    function renderHomeFeatured() {
+      const container = document.getElementById('home-featured-grid');
+      if (!container) return;
+      container.innerHTML = GAMES_CATALOG.slice(0, 8).map(createGameCardHTML).join('');
+    }
+
+    function setCategoryFilter(cat) {
+      activeCategory = cat;
+      document.querySelectorAll('.cat-pill').forEach(pill => {
+        const active = pill.dataset.cat === cat;
+        pill.classList.toggle('bg-cyan-500', active);
+        pill.classList.toggle('text-slate-950', active);
+        pill.classList.toggle('bg-white/5', !active);
+        pill.classList.toggle('text-slate-300', !active);
+      });
+      renderLibraryGrid();
+    }
+
+    function filterAndOpenLibrary(cat) {
+      setCategoryFilter(cat);
+      navigateTo('library');
+    }
+
+    function renderLibraryGrid() {
+      const grid = document.getElementById('library-games-grid');
+      if (!grid) return;
+      const query = (document.getElementById('game-search-input')?.value || '').trim().toLowerCase();
+      const filtered = GAMES_CATALOG.filter(g => {
+        const catOk = activeCategory === 'All' || g.category === activeCategory;
+        const searchOk = !query || g.title.toLowerCase().includes(query) || g.category.toLowerCase().includes(query) || g.instructions.toLowerCase().includes(query);
+        return catOk && searchOk;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full glass-panel rounded-2xl p-10 text-center text-slate-400 font-orbitron text-sm">No cosmic games matched "${query}". Try resetting filters!</div>`;
+        return;
+      }
+      grid.innerHTML = filtered.map(createGameCardHTML).join('');
+    }
+
+    function renderArenaQuickStrip() {
+      const strip = document.getElementById('arena-quick-strip');
+      if (!strip) return;
+      strip.innerHTML = GAMES_CATALOG.map(g => {
+        const active = g.id === currentActiveGame.id;
+        return `
+          <button type="button" onclick="launchGameById('${g.id}')" class="interactive-target px-3 py-1.5 rounded-xl text-xs font-orbitron whitespace-nowrap transition-all ${active ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-white/5 text-slate-300 hover:bg-white/10'}">
+            ${g.icon} ${g.title}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function updateGlobalStatsUI() {
+      const total = getTotalScore();
+      const unlockedCount = ACHIEVEMENTS_CATALOG.filter(a => a.check(playerState)).length;
+      document.getElementById('header-total-score').textContent = total.toLocaleString();
+      document.getElementById('home-games-played').textContent = playerState.sessionsPlayed;
+      document.getElementById('home-badges-count').textContent = `${unlockedCount}/${ACHIEVEMENTS_CATALOG.length}`;
+      document.getElementById('spotlight-best-score').textContent = `${(playerState.scores['space-shooter'] || 0).toLocaleString()} PTS`;
+      document.getElementById('sound-toggle-btn').textContent = playerState.soundOn ? '🔊 SFX: ON' : '🔇 SFX: OFF';
+    }
+
+    function renderLeaderboardPage() {
+      const total = getTotalScore();
+      const explored = Object.keys(playerState.scores).length;
+      document.getElementById('lb-total-points').textContent = total.toLocaleString();
+      document.getElementById('lb-games-explored').textContent = `${explored} / 32`;
+
+      let rank = 'STAR CADET';
+      if (total >= 10000) rank = 'GALACTIC OVERLORD';
+      else if (total >= 5000) rank = 'SUPERNOVA COMMANDER';
+      else if (total >= 1500) rank = 'NEBULA PILOT';
+      else if (total >= 300) rank = 'ORBIT RANGER';
+      document.getElementById('player-rank-title').textContent = rank;
+
+      const achList = document.getElementById('achievements-list');
+      achList.innerHTML = ACHIEVEMENTS_CATALOG.map(a => {
+        const unlocked = a.check(playerState);
+        return `
+          <div class="p-3.5 rounded-2xl border ${unlocked ? 'bg-amber-400/10 border-amber-400/40' : 'bg-slate-950/60 border-white/5 opacity-55'}">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl">${a.icon}</span>
+              <div>
+                <div class="font-orbitron text-xs font-bold ${unlocked ? 'text-amber-300' : 'text-slate-400'}">${a.title}</div>
+                <div class="text-[11px] text-slate-400">${a.desc}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const table = document.getElementById('high-scores-table');
+      const sorted = [...GAMES_CATALOG].sort((a, b) => (playerState.scores[b.id] || 0) - (playerState.scores[a.id] || 0));
+      table.innerHTML = sorted.map((g, idx) => {
+        const sc = playerState.scores[g.id] || 0;
+        return `
+          <div class="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-950/70 border border-white/5 hover:border-cyan-400/30">
+            <div class="flex items-center gap-3">
+              <span class="w-6 text-xs font-orbitron text-slate-500">#${idx + 1}</span>
+              <span class="text-lg">${g.icon}</span>
+              <div>
+                <div class="font-orbitron text-xs font-bold text-white">${g.title}</div>
+                <div class="text-[10px] text-slate-400">${g.category}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-orbitron text-xs font-bold ${sc > 0 ? 'text-amber-300' : 'text-slate-500'}">${sc.toLocaleString()} PTS</span>
+              <button type="button" onclick="launchGameById('${g.id}')" class="interactive-target px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 text-[10px] font-orbitron font-bold transition-colors">
+                PLAY
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function resetAllProgress() {
+      playerState.scores = {};
+      playerState.sessionsPlayed = 0;
+      savePlayerState();
+      renderHomeFeatured();
+      renderLibraryGrid();
+      renderLeaderboardPage();
+      showToast('All telemetry stats reset', 'cyan');
+    }
+
+    /*************************************************************************
+     * 4. DEEP-SPACE GALAXY STARFIELD & NEBULA BACKGROUND VFX
+     *************************************************************************/
+    const bgCanvas = document.getElementById('galaxy-bg-canvas');
+    const bgCtx = bgCanvas.getContext('2d');
+    let bgStars = [];
+    let shootingStars = [];
+
+    function resizeBgCanvas() {
+      bgCanvas.width = window.innerWidth;
+      bgCanvas.height = window.innerHeight;
+      const count = playerState.vfxLevel === 'low' ? 70 : playerState.vfxLevel === 'medium' ? 140 : 230;
+      bgStars = Array.from({ length: count }, () => ({
+        x: Math.random() * bgCanvas.width,
+        y: Math.random() * bgCanvas.height,
+        r: 0.6 + Math.random() * 1.9,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: 0.1 + Math.random() * 0.35,
+        phase: Math.random() * Math.PI * 2,
+        col: ['#ffffff', '#00f3ff', '#ff00ea', '#ffd700'][Math.floor(Math.random() * 4)]
+      }));
+    }
+    window.addEventListener('resize', resizeBgCanvas);
+    resizeBgCanvas();
+
+    function setVfxLevel(lvl) {
+      playerState.vfxLevel = lvl;
+      document.querySelectorAll('.vfx-btn').forEach(b => {
+        const active = b.dataset.vfx === lvl;
+        b.classList.toggle('bg-cyan-500', active);
+        b.classList.toggle('text-slate-950', active);
+        b.classList.toggle('bg-white/5', !active);
+        b.classList.toggle('text-slate-300', !active);
+      });
+      resizeBgCanvas();
+      savePlayerState();
+      showToast(`Galaxy VFX set to ${lvl.toUpperCase()}`, 'cyan');
+    }
+
+    function setCursorStyle(style) {
+      playerState.cursorStyle = style;
+      document.querySelectorAll('.cursor-btn').forEach(b => {
+        const active = b.dataset.cursor === style;
+        b.classList.toggle('bg-fuchsia-500', active);
+        b.classList.toggle('text-white', active);
+        b.classList.toggle('bg-white/5', !active);
+        b.classList.toggle('text-slate-300', !active);
+      });
+      savePlayerState();
+      showToast(`Pointer Aura set to ${style.toUpperCase()}`, 'cyan');
+    }
+
+    function animateGalaxyBackground() {
+      const W = bgCanvas.width;
+      const H = bgCanvas.height;
+      bgCtx.clearRect(0, 0, W, H);
+
+      // Ambient Nebula Glows
+      const g1 = bgCtx.createRadialGradient(W * 0.2, H * 0.25, 20, W * 0.2, H * 0.25, W * 0.45);
+      g1.addColorStop(0, 'rgba(138, 43, 226, 0.14)');
+      g1.addColorStop(1, 'rgba(5, 5, 16, 0)');
+      bgCtx.fillStyle = g1;
+      bgCtx.fillRect(0, 0, W, H);
+
+      const g2 = bgCtx.createRadialGradient(W * 0.8, H * 0.75, 20, W * 0.8, H * 0.75, W * 0.45);
+      g2.addColorStop(0, 'rgba(0, 243, 255, 0.11)');
+      g2.addColorStop(1, 'rgba(5, 5, 16, 0)');
+      bgCtx.fillStyle = g2;
+      bgCtx.fillRect(0, 0, W, H);
+
+      // Twinkling Stars + Constellation Lines near Mouse
+      bgStars.forEach(s => {
+        s.x = (s.x + s.vx + W) % W;
+        s.y = (s.y + s.vy + H) % H;
+        s.phase += 0.03;
+        const alpha = 0.4 + Math.sin(s.phase) * 0.35;
+        bgCtx.globalAlpha = Math.max(0.15, alpha);
+        bgCtx.fillStyle = s.col;
+        bgCtx.beginPath();
+        bgCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        bgCtx.fill();
+
+        const dist = Math.hypot(s.x - pointerPos.x, s.y - pointerPos.y);
+        if (dist < 130 && playerState.vfxLevel !== 'low') {
+          bgCtx.strokeStyle = 'rgba(0, 243, 255, 0.22)';
+          bgCtx.lineWidth = 0.8;
+          bgCtx.beginPath();
+          bgCtx.moveTo(s.x, s.y);
+          bgCtx.lineTo(pointerPos.x, pointerPos.y);
+          bgCtx.stroke();
+        }
+      });
+      bgCtx.globalAlpha = 1;
+
+      // Occasional Shooting Star
+      if (Math.random() < 0.015 && playerState.vfxLevel !== 'low') {
+        shootingStars.push({
+          x: Math.random() * W,
+          y: Math.random() * (H * 0.4),
+          vx: 8 + Math.random() * 6,
+          vy: 4 + Math.random() * 4,
+          life: 1
+        });
+      }
+      for (let i = shootingStars.length - 1; i >= 0; i--) {
+        const ss = shootingStars[i];
+        ss.x += ss.vx;
+        ss.y += ss.vy;
+        ss.life -= 0.03;
+        if (ss.life <= 0) {
+          shootingStars.splice(i, 1);
+          continue;
+        }
+        bgCtx.strokeStyle = `rgba(0, 243, 255, ${ss.life})`;
+        bgCtx.lineWidth = 2;
+        bgCtx.beginPath();
+        bgCtx.moveTo(ss.x, ss.y);
+        bgCtx.lineTo(ss.x - ss.vx * 3, ss.y - ss.vy * 3);
+        bgCtx.stroke();
+      }
+
+      requestAnimationFrame(animateGalaxyBackground);
+    }
+
+    /*************************************************************************
+     * 5. CUSTOM COSMIC MOUSE POINTER FOLLOWER (COMPLEMENTS NATIVE OS CURSOR)
+     *************************************************************************/
+    const cursorCanvas = document.getElementById('cursor-vfx-canvas');
+    const cCtx = cursorCanvas.getContext('2d');
+    let pointerPos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let followerPos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let pointerTrail = [];
+    let pointerWaves = [];
+    let pointerAngle = 0;
+
+    function resizeCursorCanvas() {
+      cursorCanvas.width = window.innerWidth;
+      cursorCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCursorCanvas);
+    resizeCursorCanvas();
+
+    function handleGlobalPointerMove(x, y) {
+      pointerPos.x = x;
+      pointerPos.y = y;
+      const emitCount = playerState.vfxLevel === 'low' ? 1 : 2;
+      for (let i = 0; i < emitCount; i++) {
+        pointerTrail.push({
+          x: x + (Math.random() - 0.5) * 6,
+          y: y + (Math.random() - 0.5) * 6,
+          vx: (Math.random() - 0.5) * 1.4,
+          vy: (Math.random() - 0.5) * 1.4,
+          size: 1.8 + Math.random() * 2.5,
+          life: 1,
+          col: i % 2 === 0 ? '#00f3ff' : '#ff00ea'
+        });
+      }
+      if (pointerTrail.length > 75) pointerTrail.splice(0, pointerTrail.length - 75);
+    }
+
+    window.addEventListener('pointermove', e => handleGlobalPointerMove(e.clientX, e.clientY), { passive: true });
+    window.addEventListener('mousemove', e => handleGlobalPointerMove(e.clientX, e.clientY), { passive: true });
+    window.addEventListener('pointerdown', e => {
+      pointerWaves.push({ x: e.clientX, y: e.clientY, r: 6, alpha: 0.9 });
+    }, { passive: true });
+
+    function renderCursorVFX() {
+      cCtx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+
+      // Smooth Spring-Lag Follower Ring around Native OS Cursor
+      followerPos.x += (pointerPos.x - followerPos.x) * 0.24;
+      followerPos.y += (pointerPos.y - followerPos.y) * 0.24;
+      pointerAngle += 0.05;
+
+      cCtx.save();
+      cCtx.globalCompositeOperation = 'lighter';
+
+      // Stardust Trail Particles
+      for (let i = pointerTrail.length - 1; i >= 0; i--) {
+        const p = pointerTrail[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.032;
+        if (p.life <= 0) {
+          pointerTrail.splice(i, 1);
+          continue;
+        }
+        cCtx.globalAlpha = p.life * 0.85;
+        cCtx.fillStyle = p.col;
+        cCtx.beginPath();
+        cCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+        cCtx.fill();
+      }
+
+      // Click Shockwave Ripples
+      for (let i = pointerWaves.length - 1; i >= 0; i--) {
+        const w = pointerWaves[i];
+        w.r += 3.2;
+        w.alpha -= 0.045;
+        if (w.alpha <= 0) {
+          pointerWaves.splice(i, 1);
+          continue;
+        }
+        cCtx.globalAlpha = w.alpha;
+        cCtx.strokeStyle = '#00f3ff';
+        cCtx.lineWidth = 2;
+        cCtx.beginPath();
+        cCtx.arc(w.x, w.y, w.r, 0, Math.PI * 2);
+        cCtx.stroke();
+      }
+
+      // Orbiting Cosmic Reticle Aura around the Mouse Pointer
+      cCtx.globalAlpha = 0.85;
+      cCtx.translate(followerPos.x, followerPos.y);
+      cCtx.rotate(pointerAngle);
+
+      if (playerState.cursorStyle === 'starship') {
+        cCtx.strokeStyle = '#00f3ff';
+        cCtx.lineWidth = 1.6;
+        cCtx.beginPath();
+        cCtx.moveTo(0, -22);
+        cCtx.lineTo(18, 16);
+        cCtx.lineTo(0, 9);
+        cCtx.lineTo(-18, 16);
+        cCtx.closePath();
+        cCtx.stroke();
+      } else if (playerState.cursorStyle === 'vortex') {
+        cCtx.strokeStyle = '#ff00ea';
+        cCtx.lineWidth = 2;
+        cCtx.setLineDash([7, 7]);
+        cCtx.beginPath();
+        cCtx.arc(0, 0, 22, 0, Math.PI * 2);
+        cCtx.stroke();
+        cCtx.setLineDash([]);
+      } else {
+        // Default Nebula Halo
+        cCtx.strokeStyle = '#00f3ff';
+        cCtx.lineWidth = 1.6;
+        cCtx.beginPath();
+        cCtx.arc(0, 0, 19, 0, Math.PI * 1.4);
+        cCtx.stroke();
+
+        cCtx.strokeStyle = '#ff00ea';
+        cCtx.beginPath();
+        cCtx.arc(0, 0, 14, Math.PI * 0.5, Math.PI * 1.9);
+        cCtx.stroke();
+      }
+
+      cCtx.restore();
+      requestAnimationFrame(renderCursorVFX);
+    }
+
+    /*************************************************************************
+     * 6. MULTI-ENGINE HIGH-GRAPHICS HTML5 ARCADE ARENA (ALL 32 GAMES)
+     *************************************************************************/
+    const gameCanvas = document.getElementById('game-canvas');
+    const gCtx = gameCanvas.getContext('2d');
+    let gameLoopId = null;
+    let gameState = {};
+    let keysPressed = {};
+    let canvasPointer = { x: 0, y: 0, down: false };
+
+    function resizeGameCanvas() {
+      const wrapper = document.getElementById('arena-canvas-wrapper');
+      if (!wrapper) return;
+      gameCanvas.width = wrapper.clientWidth || 800;
+      gameCanvas.height = wrapper.clientHeight || 480;
+    }
+    window.addEventListener('resize', resizeGameCanvas);
+
+    window.addEventListener('keydown', e => {
+      keysPressed[e.key] = true;
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key) && document.getElementById('page-arena').classList.contains('active')) {
+        e.preventDefault();
+      }
+      if (gameState.onKeyDown) gameState.onKeyDown(e.key);
+    });
+    window.addEventListener('keyup', e => {
+      keysPressed[e.key] = false;
+    });
+
+    function updateCanvasPointer(clientX, clientY) {
+      const rect = gameCanvas.getBoundingClientRect();
+      canvasPointer.x = clientX - rect.left;
+      canvasPointer.y = clientY - rect.top;
+    }
+
+    gameCanvas.addEventListener('pointermove', e => updateCanvasPointer(e.clientX, e.clientY));
+    gameCanvas.addEventListener('pointerdown', e => {
+      updateCanvasPointer(e.clientX, e.clientY);
+      canvasPointer.down = true;
+      if (gameState.onTap) gameState.onTap(canvasPointer.x, canvasPointer.y);
+    });
+    gameCanvas.addEventListener('pointerup', () => { canvasPointer.down = false; });
+
+    function toggleArenaFullscreen() {
+      const wrapper = document.getElementById('arena-canvas-wrapper');
+      if (!document.fullscreenElement) {
+        wrapper.requestFullscreen?.().catch(() => {});
+      } else {
+        document.exitFullscreen?.().catch(() => {});
+      }
+    }
+
+    function launchRandomGame() {
+      const rand = GAMES_CATALOG[Math.floor(Math.random() * GAMES_CATALOG.length)];
+      launchGameById(rand.id);
+    }
+
+    function launchGameById(gameId) {
+      currentActiveGame = getGameById(gameId);
+      playerState.sessionsPlayed++;
+      savePlayerState();
+
+      navigateTo('arena');
+      document.getElementById('arena-game-title').textContent = `${currentActiveGame.icon} ${currentActiveGame.title.toUpperCase()}`;
+      document.getElementById('arena-game-category').textContent = currentActiveGame.category;
+      document.getElementById('arena-game-instructions').textContent = currentActiveGame.instructions;
+      document.getElementById('arena-best-score').textContent = (playerState.scores[currentActiveGame.id] || 0).toLocaleString();
+      renderArenaQuickStrip();
+
+      restartCurrentGame();
+    }
+
+    function stopActiveGameLoop() {
+      if (gameLoopId) {
+        cancelAnimationFrame(gameLoopId);
+        gameLoopId = null;
+      }
+    }
+
+    function setArenaScore(val) {
+      gameState.score = val;
+      document.getElementById('arena-score').textContent = val.toLocaleString();
+      const best = playerState.scores[currentActiveGame.id] || 0;
+      if (val > best) {
+        document.getElementById('arena-best-score').textContent = val.toLocaleString();
+      }
+    }
+
+    function triggerGameOver(title = 'MISSION COMPLETE', badge = 'SESSION ENDED') {
+      gameState.over = true;
+      playSynthSound('explosion');
+      recordGameScore(currentActiveGame.id, gameState.score || 0);
+      document.getElementById('overlay-badge').textContent = badge;
+      document.getElementById('overlay-title').textContent = title;
+      document.getElementById('overlay-final-score').textContent = (gameState.score || 0).toLocaleString();
+      document.getElementById('arena-overlay').classList.remove('hidden');
+    }
+
+    function restartCurrentGame() {
+      stopActiveGameLoop();
+      resizeGameCanvas();
+      document.getElementById('arena-overlay').classList.add('hidden');
+      setArenaScore(0);
+
+      const W = gameCanvas.width;
+      const H = gameCanvas.height;
+      const accent = currentActiveGame.color;
+      const isHard = currentActiveGame.difficulty === 'Hard';
+      const speedMult = isHard ? 1.35 : currentActiveGame.difficulty === 'Medium' ? 1.0 : 0.8;
+
+      const arenaStars = Array.from({ length: 65 }, (_, idx) => ({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        z: 0.4 + (idx % 3) * 0.55,
+        r: 0.7 + (idx % 3) * 0.7,
+        col: ['#ffffff', '#a5f3fc', '#f5d0fe', accent][idx % 4]
+      }));
+
+      gameState = {
+        score: 0,
+        over: false,
+        particles: [],
+        shockwaves: [],
+        popups: [],
+        shake: 0,
+        bgTime: 0
+      };
+
+      function triggerShake(amount = 8) {
+        gameState.shake = Math.min(22, gameState.shake + amount);
+      }
+
+      function spawnFloatingPopup(x, y, text, col = '#ffd700') {
+        gameState.popups.push({ x, y, text, col, life: 1, vy: -1.4 });
+      }
+
+      function spawnGameExplosion(x, y, col = accent, count = 22) {
+        gameState.shockwaves.push({ x, y, r: 6, alpha: 0.95, col });
+        for (let i = 0; i < count; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const sp = 1.2 + Math.random() * 5.2;
+          gameState.particles.push({
+            x,
+            y,
+            vx: Math.cos(a) * sp,
+            vy: Math.sin(a) * sp,
+            size: 1.8 + Math.random() * 3.4,
+            life: 1,
+            decay: 0.024 + Math.random() * 0.02,
+            col: i % 3 === 0 ? '#ffffff' : col
+          });
+        }
+      }
+
+      function drawCosmicArenaBackdrop(scrollSpeed = 1.2, showGrid = false) {
+        gameState.bgTime += 0.016;
+        const bgGrad = gCtx.createRadialGradient(W * 0.5, H * 0.4, 20, W * 0.5, H * 0.5, Math.max(W, H) * 0.75);
+        bgGrad.addColorStop(0, '#0f1638');
+        bgGrad.addColorStop(0.55, '#070a1f');
+        bgGrad.addColorStop(1, '#03040c');
+        gCtx.fillStyle = bgGrad;
+        gCtx.fillRect(0, 0, W, H);
+
+        gCtx.save();
+        gCtx.globalCompositeOperation = 'lighter';
+        const neb1 = gCtx.createRadialGradient(
+          W * 0.28 + Math.sin(gameState.bgTime * 0.5) * 40,
+          H * 0.35 + Math.cos(gameState.bgTime * 0.4) * 30,
+          10,
+          W * 0.28,
+          H * 0.35,
+          W * 0.36
+        );
+        neb1.addColorStop(0, 'rgba(138, 43, 226, 0.16)');
+        neb1.addColorStop(1, 'rgba(0,0,0,0)');
+        gCtx.fillStyle = neb1;
+        gCtx.fillRect(0, 0, W, H);
+
+        const neb2 = gCtx.createRadialGradient(
+          W * 0.74 + Math.cos(gameState.bgTime * 0.45) * 35,
+          H * 0.68,
+          10,
+          W * 0.74,
+          H * 0.68,
+          W * 0.34
+        );
+        neb2.addColorStop(0, 'rgba(0, 243, 255, 0.12)');
+        neb2.addColorStop(1, 'rgba(0,0,0,0)');
+        gCtx.fillStyle = neb2;
+        gCtx.fillRect(0, 0, W, H);
+        gCtx.restore();
+
+        if (showGrid) {
+          gCtx.strokeStyle = 'rgba(0, 243, 255, 0.07)';
+          gCtx.lineWidth = 1;
+          const step = 42;
+          const offset = (gameState.bgTime * 28) % step;
+          for (let gx = 0; gx < W; gx += step) {
+            gCtx.beginPath();
+            gCtx.moveTo(gx, 0);
+            gCtx.lineTo(gx, H);
+            gCtx.stroke();
+          }
+          for (let gy = offset; gy < H; gy += step) {
+            gCtx.beginPath();
+            gCtx.moveTo(0, gy);
+            gCtx.lineTo(W, gy);
+            gCtx.stroke();
+          }
+        }
+
+        arenaStars.forEach(s => {
+          s.y += s.z * scrollSpeed;
+          if (s.y > H) {
+            s.y = 0;
+            s.x = Math.random() * W;
+          }
+          gCtx.globalAlpha = 0.35 + s.z * 0.45;
+          gCtx.fillStyle = s.col;
+          gCtx.beginPath();
+          gCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          gCtx.fill();
+        });
+        gCtx.globalAlpha = 1;
+      }
+
+      function drawHighVfxOverlays() {
+        gCtx.save();
+        gCtx.globalCompositeOperation = 'lighter';
+
+        for (let i = gameState.shockwaves.length - 1; i >= 0; i--) {
+          const sw = gameState.shockwaves[i];
+          sw.r += 3.6;
+          sw.alpha -= 0.045;
+          if (sw.alpha <= 0) {
+            gameState.shockwaves.splice(i, 1);
+            continue;
+          }
+          gCtx.strokeStyle = sw.col;
+          gCtx.globalAlpha = sw.alpha;
+          gCtx.lineWidth = 2.5;
+          gCtx.beginPath();
+          gCtx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
+          gCtx.stroke();
+        }
+
+        for (let i = gameState.particles.length - 1; i >= 0; i--) {
+          const p = gameState.particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vx *= 0.97;
+          p.vy *= 0.97;
+          p.life -= p.decay;
+          if (p.life <= 0) {
+            gameState.particles.splice(i, 1);
+            continue;
+          }
+          gCtx.globalAlpha = p.life;
+          gCtx.fillStyle = p.col;
+          gCtx.shadowBlur = 12;
+          gCtx.shadowColor = p.col;
+          gCtx.beginPath();
+          gCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+          gCtx.fill();
+        }
+        gCtx.restore();
+
+        for (let i = gameState.popups.length - 1; i >= 0; i--) {
+          const pop = gameState.popups[i];
+          pop.y += pop.vy;
+          pop.life -= 0.025;
+          if (pop.life <= 0) {
+            gameState.popups.splice(i, 1);
+            continue;
+          }
+          gCtx.save();
+          gCtx.globalAlpha = pop.life;
+          gCtx.font = 'bold 14px Orbitron';
+          gCtx.textAlign = 'center';
+          gCtx.fillStyle = pop.col;
+          gCtx.shadowBlur = 10;
+          gCtx.shadowColor = pop.col;
+          gCtx.fillText(pop.text, pop.x, pop.y);
+          gCtx.restore();
+        }
+      }
+
+      function draw3DSphere(x, y, r, baseCol, glowCol = baseCol) {
+        gCtx.save();
+        gCtx.shadowBlur = 18;
+        gCtx.shadowColor = glowCol;
+        const grad = gCtx.createRadialGradient(x - r * 0.32, y - r * 0.32, r * 0.08, x, y, r);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.28, baseCol);
+        grad.addColorStop(0.85, '#090d24');
+        grad.addColorStop(1, glowCol);
+        gCtx.fillStyle = grad;
+        gCtx.beginPath();
+        gCtx.arc(x, y, r, 0, Math.PI * 2);
+        gCtx.fill();
+        gCtx.restore();
+      }
+
+      function draw3DStarfighter(x, y, primaryCol = '#00f3ff', engineCol = '#ff00ea', scale = 1) {
+        gCtx.save();
+        gCtx.translate(x, y);
+        gCtx.scale(scale, scale);
+
+        gCtx.save();
+        gCtx.globalCompositeOperation = 'lighter';
+        const flicker = 14 + Math.random() * 10;
+        [-11, 11].forEach(offsetX => {
+          const flameGrad = gCtx.createLinearGradient(offsetX, 14, offsetX, 14 + flicker);
+          flameGrad.addColorStop(0, '#ffffff');
+          flameGrad.addColorStop(0.4, primaryCol);
+          flameGrad.addColorStop(1, 'rgba(255,0,234,0)');
+          gCtx.fillStyle = flameGrad;
+          gCtx.beginPath();
+          gCtx.moveTo(offsetX - 4, 14);
+          gCtx.lineTo(offsetX + 4, 14);
+          gCtx.lineTo(offsetX, 14 + flicker);
+          gCtx.closePath();
+          gCtx.fill();
+        });
+        gCtx.restore();
+
+        const wingGrad = gCtx.createLinearGradient(-28, 0, 28, 16);
+        wingGrad.addColorStop(0, '#1e293b');
+        wingGrad.addColorStop(0.5, primaryCol);
+        wingGrad.addColorStop(1, '#0f172a');
+        gCtx.fillStyle = wingGrad;
+        gCtx.strokeStyle = primaryCol;
+        gCtx.lineWidth = 1.5;
+        gCtx.beginPath();
+        gCtx.moveTo(0, -28);
+        gCtx.lineTo(28, 16);
+        gCtx.lineTo(12, 12);
+        gCtx.lineTo(0, 20);
+        gCtx.lineTo(-12, 12);
+        gCtx.lineTo(-28, 16);
+        gCtx.closePath();
+        gCtx.fill();
+        gCtx.stroke();
+
+        const hullGrad = gCtx.createLinearGradient(-8, -26, 8, 16);
+        hullGrad.addColorStop(0, '#ffffff');
+        hullGrad.addColorStop(0.5, '#94a3b8');
+        hullGrad.addColorStop(1, '#1e293b');
+        gCtx.fillStyle = hullGrad;
+        gCtx.beginPath();
+        gCtx.moveTo(0, -28);
+        gCtx.lineTo(8, 12);
+        gCtx.lineTo(-8, 12);
+        gCtx.closePath();
+        gCtx.fill();
+
+        const canopyGrad = gCtx.createRadialGradient(-2, -6, 1, 0, -4, 9);
+        canopyGrad.addColorStop(0, '#ffffff');
+        canopyGrad.addColorStop(0.5, engineCol);
+        canopyGrad.addColorStop(1, '#3b0764');
+        gCtx.fillStyle = canopyGrad;
+        gCtx.beginPath();
+        gCtx.ellipse(0, -4, 4.5, 9, 0, 0, Math.PI * 2);
+        gCtx.fill();
+
+        gCtx.restore();
+      }
+
+      const engine = currentActiveGame.engine;
+
+      /* ---------------- ENGINE 1: 3D-SHADED SPACE SHOOTER ---------------- */
+      if (engine === 'shooter') {
+        gameState.shipX = W / 2;
+        gameState.bullets = [];
+        gameState.enemies = [];
+        gameState.tick = 0;
+
+        function loop() {
+          if (gameState.over) return;
+          gameState.tick++;
+
+          gCtx.save();
+          if (gameState.shake > 0.2) {
+            gCtx.translate((Math.random() - 0.5) * gameState.shake, (Math.random() - 0.5) * gameState.shake);
+            gameState.shake *= 0.86;
+          }
+
+          drawCosmicArenaBackdrop(2.6, false);
+
+          if (keysPressed['ArrowLeft'] || keysPressed['a']) gameState.shipX -= 7.5;
+          if (keysPressed['ArrowRight'] || keysPressed['d']) gameState.shipX += 7.5;
+          if (canvasPointer.x > 0) gameState.shipX += (canvasPointer.x - gameState.shipX) * 0.2;
+          gameState.shipX = Math.max(30, Math.min(W - 30, gameState.shipX));
+
+          if (gameState.tick % 11 === 0) {
+            gameState.bullets.push({ x: gameState.shipX - 11, y: H - 56 });
+            gameState.bullets.push({ x: gameState.shipX + 11, y: H - 56 });
+            playSynthSound('laser');
+          }
+
+          if (gameState.tick % Math.max(20, Math.floor(38 / speedMult)) === 0) {
+            const isBoss = gameState.score > 0 && gameState.score % 250 === 0;
+            gameState.enemies.push({
+              x: 40 + Math.random() * (W - 80),
+              y: -32,
+              r: isBoss ? 30 : 18 + Math.random() * 5,
+              hp: isBoss ? 4 : 1,
+              maxHp: isBoss ? 4 : 1,
+              rot: Math.random() * Math.PI,
+              vy: (isBoss ? 1.5 : 2.3 + Math.random() * 1.8) * speedMult
+            });
+          }
+
+          gCtx.save();
+          gCtx.globalCompositeOperation = 'lighter';
+          for (let i = gameState.bullets.length - 1; i >= 0; i--) {
+            const b = gameState.bullets[i];
+            b.y -= 12;
+            const beamGrad = gCtx.createLinearGradient(b.x, b.y, b.x, b.y + 20);
+            beamGrad.addColorStop(0, '#ffffff');
+            beamGrad.addColorStop(0.4, '#00f3ff');
+            beamGrad.addColorStop(1, 'rgba(0,243,255,0)');
+            gCtx.fillStyle = beamGrad;
+            gCtx.fillRect(b.x - 2.5, b.y, 5, 20);
+            if (b.y < -25) gameState.bullets.splice(i, 1);
+          }
+          gCtx.restore();
+
+          for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+            const en = gameState.enemies[i];
+            en.y += en.vy;
+            en.rot += 0.04;
+
+            gCtx.save();
+            gCtx.translate(en.x, en.y);
+            gCtx.rotate(en.rot);
+            gCtx.strokeStyle = accent;
+            gCtx.lineWidth = 2;
+            gCtx.setLineDash([8, 6]);
+            gCtx.beginPath();
+            gCtx.arc(0, 0, en.r + 5, 0, Math.PI * 2);
+            gCtx.stroke();
+            gCtx.restore();
+
+            draw3DSphere(en.x, en.y, en.r, accent, '#ff00ea');
+
+            for (let j = gameState.bullets.length - 1; j >= 0; j--) {
+              const b = gameState.bullets[j];
+              if (Math.hypot(b.x - en.x, b.y - en.y) < en.r + 8) {
+                gameState.bullets.splice(j, 1);
+                en.hp--;
+                spawnGameExplosion(b.x, b.y, '#00f3ff', 6);
+                if (en.hp <= 0) {
+                  const pts = en.maxHp > 1 ? 125 : 25;
+                  spawnGameExplosion(en.x, en.y, accent, 26);
+                  spawnFloatingPopup(en.x, en.y, `+${pts}`, '#00f3ff');
+                  triggerShake(en.maxHp > 1 ? 12 : 5);
+                  playSynthSound('score');
+                  setArenaScore(gameState.score + pts);
+                  gameState.enemies.splice(i, 1);
+                }
+                break;
+              }
+            }
+
+            if (en && en.y > H - 28) {
+              triggerShake(18);
+              triggerGameOver('ORBITAL DEFENSE BREACHED', 'ALIEN FLEET PENETRATED');
+              gCtx.restore();
+              return;
+            }
+          }
+
+          draw3DStarfighter(gameState.shipX, H - 42, '#00f3ff', accent, 1.15);
+          drawHighVfxOverlays();
+          gCtx.restore();
+
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        loop();
+      }
+
+      /* ---------------- ENGINE 2: VOLUMETRIC ASTEROID DODGER ---------------- */
+      else if (engine === 'dodger') {
+        gameState.px = W / 2;
+        gameState.hazards = [];
+        gameState.orbs = [];
+        gameState.tick = 0;
+
+        function loop() {
+          if (gameState.over) return;
+          gameState.tick++;
+          if (gameState.tick % 6 === 0) setArenaScore(gameState.score + 5);
+
+          gCtx.save();
+          if (gameState.shake > 0.2) {
+            gCtx.translate((Math.random() - 0.5) * gameState.shake, (Math.random() - 0.5) * gameState.shake);
+            gameState.shake *= 0.86;
+          }
+
+          drawCosmicArenaBackdrop(3.8, true);
+
+          if (keysPressed['ArrowLeft'] || keysPressed['a']) gameState.px -= 7.5;
+          if (keysPressed['ArrowRight'] || keysPressed['d']) gameState.px += 7.5;
+          if (canvasPointer.x > 0) gameState.px += (canvasPointer.x - gameState.px) * 0.22;
+          gameState.px = Math.max(24, Math.min(W - 24, gameState.px));
+
+          if (gameState.tick % Math.max(10, Math.floor(20 / speedMult)) === 0) {
+            const r = 15 + Math.random() * 18;
+            const vertices = Array.from({ length: 9 }, (_, k) => {
+              const ang = (Math.PI * 2 * k) / 9;
+              const rad = r * (0.78 + Math.random() * 0.34);
+              return { x: Math.cos(ang) * rad, y: Math.sin(ang) * rad };
+            });
+            gameState.hazards.push({
+              x: Math.random() * W,
+              y: -35,
+              r,
+              rot: 0,
+              vrot: (Math.random() - 0.5) * 0.08,
+              vertices,
+              vy: (3.8 + Math.random() * 3.2) * speedMult
+            });
+          }
+
+          if (gameState.tick % 75 === 0) {
+            gameState.orbs.push({ x: 30 + Math.random() * (W - 60), y: -20, vy: 3.4 * speedMult });
+          }
+
+          for (let i = gameState.orbs.length - 1; i >= 0; i--) {
+            const o = gameState.orbs[i];
+            o.y += o.vy;
+            draw3DSphere(o.x, o.y, 11, '#ffd700', '#f59e0b');
+            if (Math.hypot(o.x - gameState.px, o.y - (H - 46)) < 28) {
+              playSynthSound('score');
+              setArenaScore(gameState.score + 75);
+              spawnGameExplosion(o.x, o.y, '#ffd700', 16);
+              spawnFloatingPopup(o.x, o.y, '+75 STAR CELL', '#ffd700');
+              gameState.orbs.splice(i, 1);
+              continue;
+            }
+            if (o.y > H + 30) gameState.orbs.splice(i, 1);
+          }
+
+          for (let i = gameState.hazards.length - 1; i >= 0; i--) {
+            const h = gameState.hazards[i];
+            h.y += h.vy;
+            h.rot += h.vrot;
+
+            gCtx.save();
+            gCtx.translate(h.x, h.y);
+            gCtx.rotate(h.rot);
+            const rockGrad = gCtx.createRadialGradient(-h.r * 0.3, -h.r * 0.3, 2, 0, 0, h.r);
+            rockGrad.addColorStop(0, '#fb7185');
+            rockGrad.addColorStop(0.45, '#4c1d95');
+            rockGrad.addColorStop(1, '#0f172a');
+            gCtx.fillStyle = rockGrad;
+            gCtx.strokeStyle = accent;
+            gCtx.lineWidth = 2;
+            gCtx.shadowBlur = 14;
+            gCtx.shadowColor = accent;
+            gCtx.beginPath();
+            h.vertices.forEach((v, idx) => idx === 0 ? gCtx.moveTo(v.x, v.y) : gCtx.lineTo(v.x, v.y));
+            gCtx.closePath();
+            gCtx.fill();
+            gCtx.stroke();
+            gCtx.restore();
+
+            if (Math.hypot(h.x - gameState.px, h.y - (H - 46)) < h.r + 12) {
+              triggerShake(20);
+              spawnGameExplosion(gameState.px, H - 46, '#ff00ea', 35);
+              triggerGameOver('METEOR COLLISION', 'HULL INTEGRITY ZERO');
+              gCtx.restore();
+              return;
+            }
+            if (h.y > H + 45) gameState.hazards.splice(i, 1);
+          }
+
+          draw3DStarfighter(gameState.px, H - 46, '#00f3ff', accent, 1.05);
+          gCtx.strokeStyle = 'rgba(0, 243, 255, 0.35)';
+          gCtx.lineWidth = 2;
+          gCtx.beginPath();
+          gCtx.arc(gameState.px, H - 46, 26, 0, Math.PI * 2);
+          gCtx.stroke();
+
+          drawHighVfxOverlays();
+          gCtx.restore();
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        loop();
+      }
+
+      /* ---------------- ENGINE 3: NEON PLASMA SNAKE ---------------- */
+      else if (engine === 'snake') {
+        const grid = 22;
+        const cols = Math.floor(W / grid);
+        const rows = Math.floor(H / grid);
+        gameState.snake = [{ x: Math.floor(cols / 2), y: Math.floor(rows / 2) }];
+        gameState.dir = { x: 1, y: 0 };
+        gameState.food = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
+        gameState.tick = 0;
+
+        gameState.onKeyDown = (k) => {
+          if ((k === 'ArrowUp' || k === 'w') && gameState.dir.y === 0) gameState.dir = { x: 0, y: -1 };
+          if ((k === 'ArrowDown' || k === 's') && gameState.dir.y === 0) gameState.dir = { x: 0, y: 1 };
+          if ((k === 'ArrowLeft' || k === 'a') && gameState.dir.x === 0) gameState.dir = { x: -1, y: 0 };
+          if ((k === 'ArrowRight' || k === 'd') && gameState.dir.x === 0) gameState.dir = { x: 1, y: 0 };
+        };
+
+        gameState.onTap = (tx, ty) => {
+          const head = gameState.snake[0];
+          const hx = head.x * grid;
+          const hy = head.y * grid;
+          if (Math.abs(tx - hx) > Math.abs(ty - hy)) {
+            gameState.dir = tx > hx ? { x: 1, y: 0 } : { x: -1, y: 0 };
+          } else {
+            gameState.dir = ty > hy ? { x: 0, y: 1 } : { x: 0, y: -1 };
+          }
+        };
+
+        function loop() {
+          if (gameState.over) return;
+          gameState.tick++;
+          const stepRate = isHard ? 5 : 7;
+          if (gameState.tick % stepRate === 0) {
+            const head = {
+              x: (gameState.snake[0].x + gameState.dir.x + cols) % cols,
+              y: (gameState.snake[0].y + gameState.dir.y + rows) % rows
+            };
+
+            if (gameState.snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+              triggerShake(16);
+              triggerGameOver('PLASMA LOOP COLLISION', 'SERPENT TERMINATED');
+              return;
+            }
+
+            gameState.snake.unshift(head);
+            if (head.x === gameState.food.x && head.y === gameState.food.y) {
+              playSynthSound('score');
+              const fx = gameState.food.x * grid + grid / 2;
+              const fy = gameState.food.y * grid + grid / 2;
+              spawnGameExplosion(fx, fy, '#ffd700', 20);
+              spawnFloatingPopup(fx, fy - 10, '+50 QUANTUM', '#ffd700');
+              setArenaScore(gameState.score + 50);
+              gameState.food = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
+            } else {
+              gameState.snake.pop();
+            }
+          }
+
+          drawCosmicArenaBackdrop(0.4, true);
+
+          const pulse = Math.sin(gameState.tick * 0.14) * 2.5;
+          draw3DSphere(gameState.food.x * grid + grid / 2, gameState.food.y * grid + grid / 2, grid * 0.44 + pulse, '#ffd700', '#ff00ea');
+
+          gameState.snake.forEach((seg, idx) => {
+            const cx = seg.x * grid + grid / 2;
+            const cy = seg.y * grid + grid / 2;
+            const radius = idx === 0 ? grid * 0.52 : Math.max(5, grid * 0.45 - idx * 0.12);
+            draw3DSphere(cx, cy, radius, idx === 0 ? '#ffffff' : accent, accent);
+          });
+
+          drawHighVfxOverlays();
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        loop();
+      }
+
+      /* ---------------- ENGINE 4: CYBER LASER PONG ---------------- */
+      else if (engine === 'pong') {
+        gameState.py = H / 2 - 48;
+        gameState.aiY = H / 2 - 48;
+        gameState.ball = { x: W / 2, y: H / 2, vx: 5.4 * speedMult, vy: 3.6 * speedMult, trail: [] };
+
+        function loop() {
+          if (gameState.over) return;
+          gCtx.save();
+          if (gameState.shake > 0.2) {
+            gCtx.translate((Math.random() - 0.5) * gameState.shake, (Math.random() - 0.5) * gameState.shake);
+            gameState.shake *= 0.86;
+          }
+
+          drawCosmicArenaBackdrop(0.5, true);
+
+          if (keysPressed['ArrowUp']) gameState.py -= 7.5;
+          if (keysPressed['ArrowDown']) gameState.py += 7.5;
+          if (canvasPointer.y > 0) gameState.py += (canvasPointer.y - 48 - gameState.py) * 0.24;
+          gameState.py = Math.max(4, Math.min(H - 100, gameState.py));
+
+          gameState.aiY += (gameState.ball.y - 48 - gameState.aiY) * (0.075 * speedMult);
+          gameState.aiY = Math.max(4, Math.min(H - 100, gameState.aiY));
+
+          const b = gameState.ball;
+          b.trail.push({ x: b.x, y: b.y });
+          if (b.trail.length > 14) b.trail.shift();
+
+          b.x += b.vx;
+          b.y += b.vy;
+          if (b.y < 10 || b.y > H - 10) {
+            b.vy *= -1;
+            spawnGameExplosion(b.x, b.y, '#00f3ff', 8);
+          }
+
+          if (b.x < 36 && b.y > gameState.py && b.y < gameState.py + 96) {
+            b.vx = Math.abs(b.vx) * 1.05;
+            triggerShake(6);
+            spawnGameExplosion(b.x, b.y, '#00f3ff', 14);
+            spawnFloatingPopup(b.x + 25, b.y, '+20', '#00f3ff');
+            playSynthSound('laser');
+            setArenaScore(gameState.score + 20);
+          }
+          if (b.x > W - 36 && b.y > gameState.aiY && b.y < gameState.aiY + 96) {
+            b.vx = -Math.abs(b.vx);
+            triggerShake(5);
+            spawnGameExplosion(b.x, b.y, accent, 14);
+            playSynthSound('click');
+          }
+
+          if (b.x < 0) {
+            triggerShake(18);
+            triggerGameOver('AI SCORED POINT', 'MATCH CONCLUDED');
+            gCtx.restore();
+            return;
+          }
+          if (b.x > W) {
+            setArenaScore(gameState.score + 100);
+            spawnFloatingPopup(W / 2, H / 2, '+100 GOAL!', '#ffd700');
+            playSynthSound('score');
+            b.x = W / 2;
+            b.y = H / 2;
+            b.trail = [];
+            b.vx = -5.4 * speedMult;
+          }
+
+          gCtx.strokeStyle = 'rgba(0, 243, 255, 0.25)';
+          gCtx.lineWidth = 2;
+          gCtx.setLineDash([10, 10]);
+          gCtx.beginPath();
+          gCtx.moveTo(W / 2, 0);
+          gCtx.lineTo(W / 2, H);
+          gCtx.stroke();
+          gCtx.setLineDash([]);
+
+          b.trail.forEach((pt, idx) => {
+            const ratio = (idx + 1) / b.trail.length;
+            gCtx.globalAlpha = ratio * 0.45;
+            gCtx.fillStyle = '#00f3ff';
+            gCtx.beginPath();
+            gCtx.arc(pt.x, pt.y, 9 * ratio, 0, Math.PI * 2);
+            gCtx.fill();
+          });
+          gCtx.globalAlpha = 1;
+
+          gCtx.shadowBlur = 16;
+          gCtx.shadowColor = '#00f3ff';
+          gCtx.fillStyle = '#00f3ff';
+          gCtx.beginPath();
+          gCtx.roundRect(18, gameState.py, 14, 96, 7);
+          gCtx.fill();
+
+          gCtx.shadowColor = accent;
+          gCtx.fillStyle = accent;
+          gCtx.beginPath();
+          gCtx.roundRect(W - 32, gameState.aiY, 14, 96, 7);
+          gCtx.fill();
+          gCtx.shadowBlur = 0;
+
+          draw3DSphere(b.x, b.y, 10, '#ffffff', '#00f3ff');
+          drawHighVfxOverlays();
+          gCtx.restore();
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        loop();
+      }
+
+      /* ---------------- ENGINE 5: CRYSTAL BRICK BREAKER ---------------- */
+      else if (engine === 'breakout') {
+        gameState.padX = W / 2 - 60;
+        gameState.ball = { x: W / 2, y: H - 60, vx: 4.8 * speedMult, vy: -4.8 * speedMult, trail: [] };
+        gameState.bricks = [];
+        const cols = 8, rows = 4;
+        const bw = (W - 80) / cols;
+        const rowColors = ['#00f3ff', '#ff00ea', '#ffd700', '#10b981'];
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            gameState.bricks.push({ x: 40 + c * bw + 4, y: 45 + r * 30, w: bw - 8, h: 22, alive: true, col: rowColors[r % rowColors.length] });
+          }
+        }
+
+        function loop() {
+          if (gameState.over) return;
+          gCtx.save();
+          if (gameState.shake > 0.2) {
+            gCtx.translate((Math.random() - 0.5) * gameState.shake, (Math.random() - 0.5) * gameState.shake);
+            gameState.shake *= 0.86;
+          }
+
+          drawCosmicArenaBackdrop(0.6, true);
+
+          if (keysPressed['ArrowLeft']) gameState.padX -= 8.5;
+          if (keysPressed['ArrowRight']) gameState.padX += 8.5;
+          if (canvasPointer.x > 0) gameState.padX += (canvasPointer.x - 60 - gameState.padX) * 0.26;
+          gameState.padX = Math.max(4, Math.min(W - 124, gameState.padX));
+
+          const b = gameState.ball;
+          b.trail.push({ x: b.x, y: b.y });
+          if (b.trail.length > 12) b.trail.shift();
+
+          b.x += b.vx;
+          b.y += b.vy;
+          if (b.x < 10 || b.x > W - 10) b.vx *= -1;
+          if (b.y < 10) b.vy *= -1;
+
+          if (b.y > H - 36 && b.x > gameState.padX && b.x < gameState.padX + 120) {
+            const hitOffset = (b.x - (gameState.padX + 60)) / 60;
+            b.vx = hitOffset * 6.5 * speedMult;
+            b.vy = -Math.abs(b.vy);
+            spawnGameExplosion(b.x, H - 32, '#00f3ff', 10);
+            playSynthSound('laser');
+          }
+          if (b.y > H + 12) {
+            triggerShake(18);
+            triggerGameOver('ORB LOST IN VOID', 'CRYSTAL WALL INTACT');
+            gCtx.restore();
+            return;
+          }
+
+          let remaining = 0;
+          gameState.bricks.forEach(br => {
+            if (!br.alive) return;
+            remaining++;
+            if (b.x > br.x && b.x < br.x + br.w && b.y > br.y && b.y < br.y + br.h) {
+              br.alive = false;
+              b.vy *= -1;
+              triggerShake(6);
+              playSynthSound('score');
+              setArenaScore(gameState.score + 35);
+              spawnGameExplosion(br.x + br.w / 2, br.y + 11, br.col, 18);
+              spawnFloatingPopup(br.x + br.w / 2, br.y, '+35', br.col);
+            } else {
+              const grad = gCtx.createLinearGradient(br.x, br.y, br.x, br.y + br.h);
+              grad.addColorStop(0, '#ffffff');
+              grad.addColorStop(0.25, br.col);
+              grad.addColorStop(1, '#0f172a');
+              gCtx.fillStyle = grad;
+              gCtx.beginPath();
+              gCtx.roundRect(br.x, br.y, br.w, br.h, 6);
+              gCtx.fill();
+              gCtx.strokeStyle = 'rgba(255,255,255,0.45)';
+              gCtx.lineWidth = 1;
+              gCtx.stroke();
+            }
+          });
+
+          if (remaining === 0) {
+            triggerGameOver('SECTOR CLEARED!', 'CRYSTAL VICTORY');
+            gCtx.restore();
+            return;
+          }
+
+          gCtx.shadowBlur = 16;
+          gCtx.shadowColor = '#00f3ff';
+          gCtx.fillStyle = '#00f3ff';
+          gCtx.beginPath();
+          gCtx.roundRect(gameState.padX, H - 28, 120, 14, 7);
+          gCtx.fill();
+          gCtx.shadowBlur = 0;
+
+          b.trail.forEach((pt, idx) => {
+            const ratio = (idx + 1) / b.trail.length;
+            gCtx.globalAlpha = ratio * 0.4;
+            gCtx.fillStyle = accent;
+            gCtx.beginPath();
+            gCtx.arc(pt.x, pt.y, 8 * ratio, 0, Math.PI * 2);
+            gCtx.fill();
+          });
+          gCtx.globalAlpha = 1;
+          draw3DSphere(b.x, b.y, 9, '#ffffff', accent);
+
+          drawHighVfxOverlays();
+          gCtx.restore();
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        loop();
+      }
+
+      /* ---------------- ENGINE 6: COSMIC JETPACK / FLAPPY NEBULA ---------------- */
+      else if (engine === 'flappy') {
+        gameState.y = H / 2;
+        gameState.vy = 0;
+        gameState.pipes = [];
+        gameState.tick = 0;
+
+        const flap = () => {
+          if (!gameState.over) {
+            gameState.vy = -7.2;
+            spawnGameExplosion(110, gameState.y + 12, '#00f3ff', 10);
+            playSynthSound('laser');
+          }
+        };
+        gameState.onTap = flap;
+        gameState.onKeyDown = (k) => { if (k === ' ' || k === 'ArrowUp') flap(); };
+
+        function loop() {
+          if (gameState.over) return;
+          gameState.tick++;
+          drawCosmicArenaBackdrop(1.6, false);
+
+          gameState.vy += 0.36;
+          gameState.y += gameState.vy;
+
+          if (gameState.tick % 92 === 0) {
+            const gapY = 75 + Math.random() * (H - 220);
+            gameState.pipes.push({ x: W + 30, gapY, gapH: 138, passed: false });
+          }
+
+          for (let i = gameState.pipes.length - 1; i >= 0; i--) {
+            const p = gameState.pipes[i];
+            p.x -= 3.8 * speedMult;
+
+            const pylonGrad = gCtx.createLinearGradient(p.x, 0, p.x + 48, 0);
+            pylonGrad.addColorStop(0, '#0f172a');
+            pylonGrad.addColorStop(0.45, accent);
+            pylonGrad.addColorStop(1, '#0f172a');
+            gCtx.fillStyle = pylonGrad;
+            gCtx.shadowBlur = 14;
+            gCtx.shadowColor = accent;
+            gCtx.fillRect(p.x, 0, 48, p.gapY);
+            gCtx.fillRect(p.x, p.gapY + p.gapH, 48, H - (p.gapY + p.gapH));
+            gCtx.shadowBlur = 0;
+
+            if (!p.passed && p.x + 48 < 110) {
+              p.passed = true;
+              playSynthSound('score');
+              setArenaScore(gameState.score + 30);
+              spawnFloatingPopup(110, gameState.y - 25, '+30', '#ffd700');
+            }
+
+            if (110 + 14 > p.x && 110 - 14 < p.x + 48 && (gameState.y - 14 < p.gapY || gameState.y + 14 > p.gapY + p.gapH)) {
+              triggerShake(18);
+              spawnGameExplosion(110, gameState.y, '#ff00ea', 28);
+              triggerGameOver('LASER GATE HIT', 'THRUSTERS OFFLINE');
+              return;
+            }
+            if (p.x < -60) gameState.pipes.splice(i, 1);
+          }
+
+          if (gameState.y < 10 || gameState.y > H - 10) {
+            triggerShake(16);
+            triggerGameOver('OUT OF ORBIT', 'ALTITUDE LOST');
+            return;
+          }
+
+          draw3DSphere(110, gameState.y, 16, '#00f3ff', '#ff00ea');
+          gCtx.strokeStyle = '#ffffff';
+          gCtx.lineWidth = 2;
+          gCtx.beginPath();
+          gCtx.ellipse(110, gameState.y + 3, 24, 7, 0, 0, Math.PI * 2);
+          gCtx.stroke();
+
+          drawHighVfxOverlays();
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        loop();
+      }
+
+      /* ---------------- ENGINE 7: HOLOGRAPHIC REFLEX AIM TRAINER ---------------- */
+      else if (engine === 'aim') {
+        gameState.timeLeft = 20;
+        gameState.target = { x: W / 2, y: H / 2, r: 30, rot: 0 };
+        let lastTime = performance.now();
+
+        gameState.onTap = (tx, ty) => {
+          if (gameState.over) return;
+          if (Math.hypot(tx - gameState.target.x, ty - gameState.target.y) <= gameState.target.r + 16) {
+            playSynthSound('score');
+            triggerShake(5);
+            spawnGameExplosion(gameState.target.x, gameState.target.y, accent, 24);
+            spawnFloatingPopup(gameState.target.x, gameState.target.y - 15, '+45 LOCK', '#00f3ff');
+            setArenaScore(gameState.score + 45);
+            gameState.target = {
+              x: 55 + Math.random() * (W - 110),
+              y: 65 + Math.random() * (H - 130),
+              r: Math.max(20, 32 - gameState.score * 0.008),
+              rot: 0
+            };
+          }
+        };
+
+        function loop(now) {
+          if (gameState.over) return;
+          const dt = (now - lastTime) / 1000;
+          lastTime = now;
+          gameState.timeLeft -= dt;
+          if (gameState.timeLeft <= 0) {
+            triggerGameOver('TIME EXPIRED', 'NEURAL REFLEX COMPLETE');
+            return;
+          }
+
+          drawCosmicArenaBackdrop(0.8, true);
+          gCtx.fillStyle = '#00f3ff';
+          gCtx.font = 'bold 16px Orbitron';
+          gCtx.fillText(`TIME: ${gameState.timeLeft.toFixed(1)}s`, 20, 32);
+
+          const t = gameState.target;
+          t.rot += 0.06;
+
+          gCtx.save();
+          gCtx.translate(t.x, t.y);
+          gCtx.rotate(t.rot);
+          gCtx.strokeStyle = accent;
+          gCtx.lineWidth = 3;
+          gCtx.setLineDash([12, 8]);
+          gCtx.beginPath();
+          gCtx.arc(0, 0, t.r + 8, 0, Math.PI * 2);
+          gCtx.stroke();
+          gCtx.restore();
+
+          draw3DSphere(t.x, t.y, t.r * 0.75, accent, '#ffffff');
+          drawHighVfxOverlays();
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        gameLoopId = requestAnimationFrame(loop);
+      }
+
+      /* ---------------- ENGINE 8: QUANTUM REACTOR CORE CLICKER ---------------- */
+      else if (engine === 'clicker') {
+        gameState.timeLeft = 15;
+        gameState.pulse = 0;
+        gameState.rot = 0;
+        let lastTime = performance.now();
+
+        gameState.onTap = () => {
+          if (gameState.over) return;
+          gameState.pulse = 22;
+          triggerShake(4);
+          playSynthSound('score');
+          setArenaScore(gameState.score + 20);
+          const rx = W / 2 + (Math.random() - 0.5) * 90;
+          const ry = H / 2 + (Math.random() - 0.5) * 90;
+          spawnGameExplosion(rx, ry, accent, 16);
+          spawnFloatingPopup(rx, ry, '+20 MW', '#ffd700');
+        };
+
+        function loop(now) {
+          if (gameState.over) return;
+          const dt = (now - lastTime) / 1000;
+          lastTime = now;
+          gameState.timeLeft -= dt;
+          gameState.pulse *= 0.88;
+          gameState.rot += 0.04 + gameState.pulse * 0.005;
+
+          if (gameState.timeLeft <= 0) {
+            triggerGameOver('SUPERNOVA CHARGED!', 'REACTOR AT 100%');
+            return;
+          }
+
+          drawCosmicArenaBackdrop(1.2, true);
+          gCtx.fillStyle = '#00f3ff';
+          gCtx.font = 'bold 16px Orbitron';
+          gCtx.fillText(`TIME: ${gameState.timeLeft.toFixed(1)}s`, 20, 32);
+
+          for (let ring = 0; ring < 3; ring++) {
+            gCtx.save();
+            gCtx.translate(W / 2, H / 2);
+            gCtx.rotate(gameState.rot * (ring % 2 === 0 ? 1 : -1.3) + ring);
+            gCtx.strokeStyle = ring === 1 ? '#00f3ff' : accent;
+            gCtx.lineWidth = 3;
+            gCtx.beginPath();
+            gCtx.ellipse(0, 0, 95 + ring * 18 + gameState.pulse * 0.5, 42 + ring * 10, 0, 0, Math.PI * 2);
+            gCtx.stroke();
+            gCtx.restore();
+          }
+
+          const r = 64 + gameState.pulse;
+          draw3DSphere(W / 2, H / 2, r, accent, '#ffffff');
+
+          gCtx.fillStyle = '#ffffff';
+          gCtx.font = 'bold 15px Orbitron';
+          gCtx.textAlign = 'center';
+          gCtx.fillText('TAP CORE!', W / 2, H / 2 + 5);
+          gCtx.textAlign = 'left';
+
+          drawHighVfxOverlays();
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        gameLoopId = requestAnimationFrame(loop);
+      }
+
+      /* ---------------- ENGINE 9: HOLO-CIPHER MEMORY MATRIX ---------------- */
+      else if (engine === 'simon') {
+        const pads = [
+          { x: W / 2 - 120, y: H / 2 - 115, w: 110, h: 110, col: '#00f3ff' },
+          { x: W / 2 + 10, y: H / 2 - 115, w: 110, h: 110, col: '#ff00ea' },
+          { x: W / 2 - 120, y: H / 2 + 15, w: 110, h: 110, col: '#ffd700' },
+          { x: W / 2 + 10, y: H / 2 + 15, w: 110, h: 110, col: '#10b981' }
+        ];
+        gameState.seq = [];
+        gameState.userIdx = 0;
+        gameState.showing = true;
+        gameState.litPad = -1;
+
+        function nextRound() {
+          gameState.seq.push(Math.floor(Math.random() * 4));
+          gameState.userIdx = 0;
+          gameState.showing = true;
+          let i = 0;
+          const interval = setInterval(() => {
+            if (gameState.over) { clearInterval(interval); return; }
+            gameState.litPad = gameState.seq[i];
+            const p = pads[gameState.litPad];
+            spawnGameExplosion(p.x + p.w / 2, p.y + p.h / 2, p.col, 10);
+            playSynthSound('laser');
+            setTimeout(() => { gameState.litPad = -1; }, 320);
+            i++;
+            if (i >= gameState.seq.length) {
+              clearInterval(interval);
+              setTimeout(() => { gameState.showing = false; }, 380);
+            }
+          }, 560);
+        }
+        nextRound();
+
+        gameState.onTap = (tx, ty) => {
+          if (gameState.over || gameState.showing) return;
+          pads.forEach((p, idx) => {
+            if (tx >= p.x && tx <= p.x + p.w && ty >= p.y && ty <= p.y + p.h) {
+              gameState.litPad = idx;
+              setTimeout(() => { gameState.litPad = -1; }, 180);
+              if (idx === gameState.seq[gameState.userIdx]) {
+                playSynthSound('score');
+                spawnGameExplosion(p.x + p.w / 2, p.y + p.h / 2, p.col, 14);
+                gameState.userIdx++;
+                if (gameState.userIdx >= gameState.seq.length) {
+                  setArenaScore(gameState.score + 120);
+                  spawnFloatingPopup(W / 2, H / 2 - 130, '+120 CIPHER DECODED!', '#00f3ff');
+                  setTimeout(nextRound, 500);
+                }
+              } else {
+                triggerShake(16);
+                triggerGameOver('CIPHER MISMATCH', 'HARMONIC SIGNAL LOST');
+              }
+            }
+          });
+        };
+
+        function loop() {
+          if (gameState.over) return;
+          drawCosmicArenaBackdrop(0.5, true);
+          gCtx.fillStyle = '#00f3ff';
+          gCtx.font = 'bold 15px Orbitron';
+          gCtx.textAlign = 'center';
+          gCtx.fillText(gameState.showing ? 'MEMORIZE HARMONIC SEQUENCE...' : 'REPEAT SEQUENCE!', W / 2, 36);
+          gCtx.textAlign = 'left';
+
+          pads.forEach((p, idx) => {
+            const lit = gameState.litPad === idx;
+            gCtx.save();
+            gCtx.globalAlpha = lit ? 1 : 0.35;
+            if (lit) {
+              gCtx.shadowBlur = 26;
+              gCtx.shadowColor = p.col;
+            }
+            const grad = gCtx.createLinearGradient(p.x, p.y, p.x + p.w, p.y + p.h);
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0.35, p.col);
+            grad.addColorStop(1, '#090d24');
+            gCtx.fillStyle = grad;
+            gCtx.beginPath();
+            gCtx.roundRect(p.x, p.y, p.w, p.h, 18);
+            gCtx.fill();
+            gCtx.strokeStyle = p.col;
+            gCtx.lineWidth = 2;
+            gCtx.stroke();
+            gCtx.restore();
+          });
+
+          drawHighVfxOverlays();
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        loop();
+      }
+
+      /* ---------------- ENGINE 10: GRAVITY WELL ORBIT CATCHER ---------------- */
+      else if (engine === 'catcher') {
+        gameState.bx = W / 2;
+        gameState.items = [];
+        gameState.tick = 0;
+
+        function loop() {
+          if (gameState.over) return;
+          gameState.tick++;
+          gCtx.save();
+          if (gameState.shake > 0.2) {
+            gCtx.translate((Math.random() - 0.5) * gameState.shake, (Math.random() - 0.5) * gameState.shake);
+            gameState.shake *= 0.86;
+          }
+
+          drawCosmicArenaBackdrop(1.8, false);
+
+          if (keysPressed['ArrowLeft']) gameState.bx -= 8.5;
+          if (keysPressed['ArrowRight']) gameState.bx += 8.5;
+          if (canvasPointer.x > 0) gameState.bx += (canvasPointer.x - gameState.bx) * 0.25;
+          gameState.bx = Math.max(50, Math.min(W - 50, gameState.bx));
+
+          if (gameState.tick % 25 === 0) {
+            gameState.items.push({
+              x: 35 + Math.random() * (W - 70),
+              y: -20,
+              isBomb: Math.random() < 0.25,
+              vy: (3.2 + Math.random() * 2.5) * speedMult
+            });
+          }
+
+          for (let i = gameState.items.length - 1; i >= 0; i--) {
+            const it = gameState.items[i];
+            it.y += it.vy;
+            if (it.isBomb) {
+              draw3DSphere(it.x, it.y, 13, '#f43f5e', '#ff00ea');
+            } else {
+              draw3DSphere(it.x, it.y, 12, '#ffd700', '#00f3ff');
+            }
+
+            if (Math.abs(it.y - (H - 38)) < 22 && Math.abs(it.x - gameState.bx) < 56) {
+              if (it.isBomb) {
+                triggerShake(18);
+                spawnGameExplosion(it.x, it.y, '#f43f5e', 28);
+                triggerGameOver('ANTIMATTER DETONATION!', 'COLLECTOR DAMAGED');
+                gCtx.restore();
+                return;
+              } else {
+                playSynthSound('score');
+                setArenaScore(gameState.score + 35);
+                spawnGameExplosion(it.x, it.y, '#ffd700', 16);
+                spawnFloatingPopup(it.x, it.y - 10, '+35 STARDUST', '#ffd700');
+                gameState.items.splice(i, 1);
+                continue;
+              }
+            }
+            if (it.y > H + 25) gameState.items.splice(i, 1);
+          }
+
+          gCtx.shadowBlur = 18;
+          gCtx.shadowColor = accent;
+          gCtx.fillStyle = accent;
+          gCtx.beginPath();
+          gCtx.roundRect(gameState.bx - 50, H - 42, 100, 16, 8);
+          gCtx.fill();
+          gCtx.shadowBlur = 0;
+
+          drawHighVfxOverlays();
+          gCtx.restore();
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        loop();
+      }
+
+      /* ---------------- ENGINE 11: METEOR DEFENSE / WHACK-A-CRATER ---------------- */
+      else if (engine === 'whack') {
+        const holes = [];
+        for (let r = 0; r < 2; r++) {
+          for (let c = 0; c < 3; c++) {
+            holes.push({ x: W * (0.25 + c * 0.25), y: H * (0.38 + r * 0.3) });
+          }
+        }
+        gameState.activeHole = 0;
+        gameState.timeLeft = 20;
+        let lastTime = performance.now();
+        let switchTimer = 0;
+
+        gameState.onTap = (tx, ty) => {
+          if (gameState.over) return;
+          const h = holes[gameState.activeHole];
+          if (Math.hypot(tx - h.x, ty - h.y) < 48) {
+            playSynthSound('score');
+            triggerShake(6);
+            setArenaScore(gameState.score + 40);
+            spawnGameExplosion(h.x, h.y, accent, 22);
+            spawnFloatingPopup(h.x, h.y - 20, '+40 SMASH!', '#00f3ff');
+            gameState.activeHole = Math.floor(Math.random() * holes.length);
+            switchTimer = 0;
+          }
+        };
+
+        function loop(now) {
+          if (gameState.over) return;
+          const dt = (now - lastTime) / 1000;
+          lastTime = now;
+          gameState.timeLeft -= dt;
+          switchTimer += dt;
+          if (switchTimer > 0.95 / speedMult) {
+            gameState.activeHole = Math.floor(Math.random() * holes.length);
+            switchTimer = 0;
+          }
+          if (gameState.timeLeft <= 0) {
+            triggerGameOver('CRATER SHIFT OVER', 'LUNAR PATROL COMPLETE');
+            return;
+          }
+
+          drawCosmicArenaBackdrop(0.6, true);
+          gCtx.fillStyle = '#00f3ff';
+          gCtx.font = 'bold 16px Orbitron';
+          gCtx.fillText(`TIME: ${gameState.timeLeft.toFixed(1)}s`, 20, 32);
+
+          holes.forEach((h, idx) => {
+            gCtx.strokeStyle = 'rgba(0, 243, 255, 0.35)';
+            gCtx.lineWidth = 3;
+            gCtx.beginPath();
+            gCtx.ellipse(h.x, h.y + 10, 44, 22, 0, 0, Math.PI * 2);
+            gCtx.stroke();
+
+            if (idx === gameState.activeHole) {
+              draw3DSphere(h.x, h.y - 4, 26, accent, '#ffffff');
+            }
+          });
+
+          drawHighVfxOverlays();
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        gameLoopId = requestAnimationFrame(loop);
+      }
+
+      /* ---------------- ENGINE 12: NEURAL MATRIX QUANTUM MATH ---------------- */
+      else {
+        let a = Math.floor(Math.random() * 15) + 3;
+        let b = Math.floor(Math.random() * 15) + 2;
+        let ans = a + b;
+        let options = [ans, ans + 3, Math.max(1, ans - 2)].sort(() => Math.random() - 0.5);
+        gameState.timeLeft = 25;
+        let lastTime = performance.now();
+
+        function nextQ() {
+          a = Math.floor(Math.random() * 20) + 4;
+          b = Math.floor(Math.random() * 18) + 2;
+          ans = a + b;
+          options = [ans, ans + 4, Math.max(1, ans - 3)].sort(() => Math.random() - 0.5);
+        }
+
+        gameState.onTap = (tx, ty) => {
+          if (gameState.over) return;
+          options.forEach((opt, idx) => {
+            const bx = W / 2 - 175 + idx * 120;
+            const by = H / 2 + 20;
+            if (tx >= bx && tx <= bx + 110 && ty >= by && ty <= by + 60) {
+              if (opt === ans) {
+                playSynthSound('score');
+                setArenaScore(gameState.score + 55);
+                spawnGameExplosion(bx + 55, by + 30, '#00f3ff', 20);
+                spawnFloatingPopup(bx + 55, by, '+55 SOLVED', '#ffd700');
+                nextQ();
+              } else {
+                triggerShake(10);
+                playSynthSound('explosion');
+                spawnGameExplosion(bx + 55, by + 30, '#f43f5e', 16);
+                gameState.timeLeft -= 3;
+              }
+            }
+          });
+        };
+
+        function loop(now) {
+          if (gameState.over) return;
+          const dt = (now - lastTime) / 1000;
+          lastTime = now;
+          gameState.timeLeft -= dt;
+          if (gameState.timeLeft <= 0) {
+            triggerGameOver('COMPUTATION COMPLETE', 'WARP VECTOR LOCKED');
+            return;
+          }
+
+          drawCosmicArenaBackdrop(0.7, true);
+          gCtx.fillStyle = '#00f3ff';
+          gCtx.font = 'bold 16px Orbitron';
+          gCtx.fillText(`TIME: ${gameState.timeLeft.toFixed(1)}s`, 20, 32);
+
+          gCtx.save();
+          gCtx.shadowBlur = 18;
+          gCtx.shadowColor = accent;
+          gCtx.fillStyle = '#ffffff';
+          gCtx.font = 'bold 36px Orbitron';
+          gCtx.textAlign = 'center';
+          gCtx.fillText(`${a} + ${b} = ?`, W / 2, H / 2 - 25);
+          gCtx.restore();
+
+          options.forEach((opt, idx) => {
+            const bx = W / 2 - 175 + idx * 120;
+            const by = H / 2 + 20;
+            const btnGrad = gCtx.createLinearGradient(bx, by, bx, by + 60);
+            btnGrad.addColorStop(0, 'rgba(0, 243, 255, 0.28)');
+            btnGrad.addColorStop(1, 'rgba(138, 43, 226, 0.28)');
+            gCtx.fillStyle = btnGrad;
+            gCtx.strokeStyle = accent;
+            gCtx.lineWidth = 2;
+            gCtx.beginPath();
+            gCtx.roundRect(bx, by, 110, 60, 16);
+            gCtx.fill();
+            gCtx.stroke();
+
+            gCtx.fillStyle = '#ffffff';
+            gCtx.font = 'bold 22px Orbitron';
+            gCtx.textAlign = 'center';
+            gCtx.fillText(opt, bx + 55, by + 38);
+          });
+          gCtx.textAlign = 'left';
+
+          drawHighVfxOverlays();
+          gameLoopId = requestAnimationFrame(loop);
+        }
+        gameLoopId = requestAnimationFrame(loop);
+      }
+    }
+
+    /*************************************************************************
+     * 7. BOOTSTRAP APPLICATION ON WINDOW LOAD
+     *************************************************************************/
+    window.onload = function () {
+      renderHomeFeatured();
+      renderLibraryGrid();
+      updateGlobalStatsUI();
+      animateGalaxyBackground();
+      renderCursorVFX();
+    };
+  </script>
+</body>
+</html>
